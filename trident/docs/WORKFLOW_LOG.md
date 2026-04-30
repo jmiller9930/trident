@@ -1068,9 +1068,59 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 - **Tests:** **`tests/test_locks_active_100p.py`**; **`pytest` 83 passed**.
 - **Extension:** **`src/locking/lockClient.ts`**, **`lockInterceptor.ts`**, **`src/editors/editGuard.ts`** — **`onWillSave`** blocks save without valid lock; debounced **`onDidChange`** rollback; **`trident.acquireLock` / `trident.releaseLock`**; governance **`OutputChannel`**.
 
-**Directive: `100P` · Status: `PASS`** — proof **`565b6ae`**.
+**Directive: `100P` · Status: `PASS`** — proof **`565b6ae`** (+ doc **`c162fca`**).
 
-**Next:** **100M** — IDE patch + apply — per manifest (**FIX 001** may still require explicit closure artifacts).
+---
+
+## Directive: **100P_FINAL** — Program CLOSED
+
+**Status:** **CLOSED** — **ACCEPTED**
+
+- **Verification:** **`GET /api/v1/locks/active`**; optional TTL; IDE save block + rollback; identity settings; server lock authority; no Git API / VFS / agent-router-memory drift; **`pytest` 83**.
+- **Accepted commits:** **`565b6ae`**, **`c162fca`**.
+- **Follow-up (non-blocking):** **FIX 001** proof artifacts (screenshots / audit samples) if tracked separately.
+
+**Next:** **100M** — IDE patch + apply workflow — **ISSUED**.
+
+---
+
+## Directive: **100M** — IDE Patch + Apply Workflow
+
+**Authoritative file:** **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100M_PATCH_APPLY_WORKFLOW.md`** · **Depends on:** **100P** (**ACCEPTED**) · **Unlocks:** **100N** · **Architecture:** **`TRIDENT_DIRECTIVE_000O_CODE_OSS_IDE_CLIENT_ARCHITECTURE.md`**
+
+### Step 1 — Read (engineering) — **COMPLETE**
+
+**Directive intent:** **Cursor-style** pipeline: change requests produce a **reviewable unified diff** (§6); **preview UI** (§8); **approve / reject** (§11); on approve → **validate lock + Git context + directive** (§9) → **apply** → **proof + audit** (§10). **No silent direct edits** through this workflow (§3, §13).
+
+**Repo / backend today:**
+
+| Piece | Today |
+|-------|--------|
+| **Locks + Git validation + diff proof** | **`POST /api/v1/locks/simulated-mutation`** (100E): active lock ownership, **`git_service`** validation, **`ProofObjectType.GIT_DIFF`**, audits (**GIT_STATUS_CHECKED**, **DIFF_GENERATED**, etc.) — **apply-like** server path exists but **no IDE preview/reject** split |
+| **Patch propose / preview API** | **None** — §4 “backend returns proposed patch” implies **new read-only or idempotent propose endpoint** and/or **100N** agent integration later; **100M** Step 3 likely starts with **deterministic / stub** propose or **client-generated** patch validated server-side |
+| **IDE structure** | Directive §5: **`src/patch/{patchClient,patchViewer,patchApplier,patchValidator}.ts`** — greenfield under **`trident-ide-extension/`** |
+| **Direct editing** | **100P** **`editGuard`** still allows normal typing when lock valid — **100M** §13 conflicts at product level (“all edits go through patch system”) — Step 3 must **reconcile**: e.g. governance mode switches to **patch-only apply** for governed files, or scope **100M** to **agent-proposed** edits only (architect clarification) |
+
+**Program gate (Master Execution Guide v1.1 §5, FIX 003 §8):** **FIX 003 — Lock heartbeat + expiry** (**`TRIDENT_FIX_DIRECTIVE_003_LOCK_HEARTBEAT_EXPIRY.md`**) is **mandated before 100M / 100N**. Current stack has **TTL / `expires_at`** (**100P**) but **not** heartbeat interval, **`STALE_PENDING_RECOVERY`**, force-release policy, or IDE refresh loop per FIX 003.
+
+---
+
+### Step 2 — Plan (engineering)
+
+**Directive: `100M_PLAN` · Status: `BLOCKED`**
+
+**Reason:** **`TRIDENT_MASTER_EXECUTION_GUIDE_v1_1.md`** §5 and **`TRIDENT_FIX_DIRECTIVE_003`** §8 require **FIX 003** completion **before** **100M** Step 3 Build. Engineering cannot honestly authorize **100M** implementation until **FIX 003** is **scoped + ACCEPTED** (or the **program issues a written waiver** of that gate).
+
+**When unblocked — intended Step 3 slices (preview):**
+
+1. **FIX 003** (or waiver) — heartbeat / stale semantics per fix doc; align with existing **`LockStatus`** / TTL or extend schema with migrations + audits.
+2. **Backend:** Thin **`POST /api/v1/ide/patch/validate`** (unified diff + directive/project/file context, lock check, git sanity) returning structured errors; **`POST /api/v1/ide/patch/apply`** wrapping or delegating to **`simulated-mutation`**-grade validation + **`GIT_DIFF`** proof — **no** hidden multi-file apply in MVP.
+3. **Extension:** **`patchViewer`** (webview diff), **`patchApplier`** calling validate → apply; **`patchValidator`** client-side lint (paths, `..` rejection); integrate **100P** lock acquisition prompts.
+4. **Tests:** **`pytest`** for new routes; VS Code manual / harness proof for preview/reject/apply; §14 cases.
+
+**Non-blocking:** **FIX 001** supplemental artifacts (architect **100P** note).
+
+**To return `100M_PLAN` → `READY`:** Architect **ACK** must either (**a**) accept **FIX 003** implementation order ahead of **100M** Step 3, or (**b**) explicitly **waive** FIX 003-before-100M for this program increment.
 
 ---
 
