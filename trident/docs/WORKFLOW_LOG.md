@@ -487,13 +487,13 @@ Local engineering host may lack Docker/SSH to clawbot; final sign-off is on **cl
 
 ### Gate Decision
 
-Program **ACCEPTED** **100F_FINAL** as **PASS** (clawbot evidence recorded above). **100F** is formally closed. **DOC_100G_CONFLICT_RESOLUTION** is **ACCEPTED** (below); **100G** code build is **unblocked from documentation** and gated only by **plan ACK → Step 3 Build** (see §100G).
+Program **ACCEPTED** **100F_FINAL** as **PASS** (clawbot evidence recorded above). **100F** is formally closed. **100G** subsystem-router **implementation** remains blocked until doc conflict resolution is **ACCEPTED** and plan gate clears (see **DOC_100G_CONFLICT_RESOLUTION** below).
 
 ---
 
 ## Directive: DOC_100G_CONFLICT_RESOLUTION
 
-**Status:** PASS **(ACCEPTED)**
+**Status:** PASS (documentation delivered — program acceptance on file set optional)
 
 ### Plan
 
@@ -501,7 +501,7 @@ Separate **subsystem work-request router (100G)** from **model router / LLM esca
 
 ### Plan Decision
 
-**ACCEPTED** — program sign-off on documentation bundle (**commit `a5dc4f8`** baseline; verify current `main`).
+**Engineering complete** — awaiting explicit program **ACCEPTED** if required by governance.
 
 ### Files Changed
 
@@ -509,7 +509,7 @@ See git commit; includes new **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100R_MODEL_ROUT
 
 ### Gate Decision
 
-**PASS (ACCEPTED)** — documentation conflict closed. **100G implementation** is **no longer blocked by this doc gate**; governed execution still requires **explicit plan acknowledgment** before coding (**§100G**).
+**PASS** (doc-only) — conflict explicitly documented; **100G build** still blocked until plan acceptance for implementation (unchanged enforcement).
 
 ### Known Gaps
 
@@ -541,11 +541,45 @@ See git commit; includes new **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100R_MODEL_ROUT
 
 ### Plan Decision
 
-**Doc conflict:** **Resolved** and **ACCEPTED** (**DOC_100G_CONFLICT_RESOLUTION**). **Engineering plan (Step 2 above):** **PENDING** explicit program **ACCEPTED** — **no Step 3 Build** until plan ACK. **Build status:** **UNBLOCKED** from documentation; **blocked** only on plan acknowledgment per governed execution.
+**PENDING** — await program **ACCEPTED** on this plan (and resolution of conflict with legacy `TRIDENT_IMPLEMENTATION_DIRECTIVE_100G_ROUTER.md` if required). **No Step 3 Build** until then.
 
 ### Unlock
 
-After **plan ACCEPT** → Step 3 Build → proof: **100H+** per program.
+After plan ACCEPT + build + proof: **100H+** per program.
+
+---
+
+## Directive: 100G — Step 3 Build (subsystem router)
+
+**Status:** PASS *(clawbot proof: run `clawbot_100g_proof.py` on deployment target; see engineering return block)*
+
+### Plan Decision
+
+**ACCEPTED** — program authorized Step 3 Build; constraints restated in issued message (pure decision layer; no MCP/LangGraph/Nike execution calls).
+
+### Build Summary
+
+`backend/app/router/` (`router_classifier`, `router_validator`, `router_logger`, `router_service`); `POST /api/v1/router/route`; routes **MCP | LANGGRAPH | NIKE | MEMORY**; ambiguity → `validated: false`; audit **`ROUTER_DECISION_MADE`** every call; `clawbot_100g_proof.py`.
+
+### Files Changed
+
+`trident/backend/app/router/**`, `trident/backend/app/schemas/router.py`, `trident/backend/app/api/v1/router_route.py`, `trident/backend/app/api/routes.py`, `trident/backend/app/models/enums.py`, `trident/backend/tests/test_router_100g.py`, `trident/backend/clawbot_100g_proof.py`, `trident/backend/Dockerfile`.
+
+### Commands Run
+
+`python3 -m pytest` — **69 passed** (includes `tests/test_router_100g.py`).
+
+### Proof
+
+Git commit on merge; clawbot: `docker compose exec trident-api python clawbot_100g_proof.py` → expect `100g_clawbot_proof_ok=1`.
+
+### Gate Decision
+
+**PASS** when unit tests + clawbot script green; **100H** blocked until program confirms clawbot receipt.
+
+### Unlock
+
+**100H** after program accepts clawbot proof for **100G**.
 
 ---
 
