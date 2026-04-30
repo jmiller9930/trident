@@ -51,7 +51,8 @@ def client(sqlite_engine):
         finally:
             db.close()
 
-    app = build_app(Settings())
+    # Ignore deploy TRIDENT_BASE_PATH (e.g. /trident on clawbot) so TestClient uses /api/* .
+    app = build_app(Settings(base_path=""))
     app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as tc:
         yield tc
