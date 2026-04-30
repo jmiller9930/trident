@@ -11,7 +11,7 @@ import httpx
 from sqlalchemy import func, select
 
 from app.config.settings import Settings
-from app.db.session import create_engine_for_settings, session_factory_for_settings
+from app.db.session import session_factory_for_settings
 from app.models.audit_event import AuditEvent
 from app.models.enums import AuditEventType
 from app.models.project import Project
@@ -57,7 +57,7 @@ def _api_v1_base(cfg: Settings) -> str:
 
 def main() -> int:
     cfg = Settings()
-    SessionLocal = session_factory_for_settings(create_engine_for_settings(cfg))
+    SessionLocal = session_factory_for_settings(cfg)
     with SessionLocal() as session:
         uid, wsid, pid = _ensure_seed(session)
         body = CreateDirectiveRequest(
