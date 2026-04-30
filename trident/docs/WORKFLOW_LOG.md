@@ -462,4 +462,23 @@ Local engineering host may lack Docker/SSH to clawbot; final sign-off is on **cl
 
 ---
 
+## Directive: 100F_FINAL — Clawbot execution record
+
+**Status:** PASS
+
+### Proof (clawbot `2026-04-30`)
+
+- **Git:** `7f3153c` on clawbot workspace after `git pull`.
+- **Alembic:** `100e001 (head)`.
+- **HTTP base:** `http://127.0.0.1:8000/trident/api/v1` (compose `TRIDENT_BASE_PATH=/trident`).
+- **Full validation:** `100f_final_validation_ok=1`; classify **LOW**; LOW execute **200**; HIGH reject **403** `high_risk_not_approved` proof `1712d96d-7310-46c5-b6a6-2448e94dfaa7`; HIGH approved **200**; DB `proof_objects_exec_log_count=3`, `mcp_audit_requested=3 completed=2 rejected=1`.
+- **Restart LOW:** after `docker compose restart trident-api`, `restart_low_execute_status=200`, proof `150b95ec-132a-4123-b4ed-f80923f2c4d0`, `100f_final_restart_low_ok=1`.
+- **Directive/task IDs (proof run):** `6dcf3ddd-d393-4871-ba5e-c220e2e68821` / `93712920-db08-4fe8-ab2f-ff29c5307a06`.
+
+### Gate Decision
+
+**PASS** — clawbot validation script green end-to-end including persistence after API restart.
+
+---
+
 END
