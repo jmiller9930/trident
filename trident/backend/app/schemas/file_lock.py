@@ -11,10 +11,10 @@ class FileLockRecord(BaseModel):
 
     id: uuid.UUID
     project_id: uuid.UUID
-    directive_id: uuid.UUID | None
+    directive_id: uuid.UUID
     file_path: str
     locked_by_agent_role: str
-    locked_by_user_id: uuid.UUID | None
+    locked_by_user_id: uuid.UUID
     lock_status: str
     created_at: datetime
     expires_at: datetime | None
