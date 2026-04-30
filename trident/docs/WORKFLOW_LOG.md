@@ -481,4 +481,14 @@ Local engineering host may lack Docker/SSH to clawbot; final sign-off is on **cl
 
 ---
 
+## Directive: 100F_FINAL — Program acceptance
+
+**Status:** PASS **(ACCEPTED)**
+
+### Gate Decision
+
+Program **ACCEPTED** **100F_FINAL** as **PASS** (clawbot evidence recorded above). **100F** is formally closed. **100G** (Router) remains **blocked** until the program issues that gate explicitly.
+
+---
+
 END
