@@ -33,6 +33,18 @@ Nike does not bypass LangGraph.
 
 Nike sits between the API/event producers and the workflow/runtime consumers.
 
+### 3.1 Backend authority and client boundary
+
+The **Trident backend** is the **work-processing authority**. **IDE** and **web** clients are frontends; they **produce** events and user actions to the **API** but **do not** host product agent execution. **Agent-oriented work** flows **server-side**:
+
+```text
+IDE / Web → Trident API → Nike → LangGraph → Agents / Memory / Router / MCP / Proof
+```
+
+**Nike** is **not** an LLM and **not** an agent; it **routes** and **coordinates** so that **LangGraph** and approved services remain authoritative. This chain must remain stable as **backend-managed agent role** behavior expands.
+
+### 3.2 Diagram (Nike in the stack)
+
 ```text
 IDE / Web UI
       ↓
@@ -42,8 +54,25 @@ Nike Event Orchestrator
       ↓
 LangGraph Workflow Engine
       ↓
-Agents / Memory / MCP / Router / Git-Lock Services
+Agents / Memory / Router / MCP / Proof / Git-Lock Services
 ```
+
+(Aligned with §3.1 canonical chain; Git/Lock governs mutation paths.)
+
+### 3.3 Future agent role hooks (extensibility)
+
+Nike’s **event model and routing** must be designed so these **backend-managed** agent **roles** (and graph nodes or handler bindings) can be added **without redesign** of the API→Nike→LangGraph spine:
+
+- Engineer agent  
+- Reviewer agent  
+- Documentation agent  
+- Debugger agent  
+- Test agent  
+- Security review agent  
+- Performance review agent  
+- Deployment/release agent  
+
+Concretely: new work is expressed as **event types**, **payloads**, and **LangGraph** transitions **or** server-side handler registration — **not** as new IDE-only execution engines.
 
 Nike may also receive events from:
 

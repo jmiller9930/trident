@@ -58,6 +58,18 @@ Implementation Directive (e.g., 100A) → Master Execution Guide → Governed Ex
 
 Trident is a **memory-first, local-first control plane** for multi-agent software delivery. A **FastAPI (or equivalent) backend**, **worker**, **execution/MCP service**, **data and vector stores**, and **web UI** implement a single spine: **LangGraph** owns workflow and state transitions; **MCP** is the only governed execution and tool surface; **Git + file locks** gate every mutation; **shared memory + task ledger** hold durable truth; a **router** applies local-first model policy with explicit escalation; **proof and audit** close work.
 
+### Backend as work-processing authority (IDE / Web → spine)
+
+The **backend** is the **work-processing authority**. The **IDE** is a Cursor-style editor/frontend; the **web UI** is a control-plane frontend. **Agent workflows and agent-typed work** must run through **backend-governed** services. **Agent logic must not** be implemented as **independent IDE-side execution** (no parallel “brain” in the extension that bypasses API, Nike, LangGraph, ledger, or MCP/Git rules).
+
+**Canonical processing chain (product runtime):**
+
+```text
+IDE / Web → Trident API → Nike → LangGraph → Agents / Memory / Router / MCP / Proof (+ Git/Lock governance)
+```
+
+**Future backend-managed agent roles** (hooks; not required to be fully implemented before Nike — Nike/event routing must admit them **without redesign**): **Engineer agent**, **Reviewer agent**, **Documentation agent**, **Debugger agent**, **Test agent**, **Security review agent**, **Performance review agent**, **Deployment/release agent**. These map to graph nodes and/or event-driven handlers **server-side** only; Nike routes events toward LangGraph and subsystems per **000P** — never as IDE-local orchestration.
+
 **Relationships (read left as “depends on / flows from”):**
 
 ```text
@@ -66,7 +78,7 @@ Implementation: runtime skeleton → persistence → graph → memory svc → lo
 IDE client (000O): bootstrap → locks → patch/apply → agent workflow (100K–100N), same backend authority
 ```
 
-**Orchestration (000P — Nike):** **000P** defines Nike as the internal event-routing layer between producers (API, UI, IDE, worker, MCP, router, locks) and LangGraph/runtime consumers; product behavior is implemented under **100O** (future), placed after **100C** in §2–§3.
+**Orchestration (000P — Nike):** **000P** defines Nike as the internal event-routing layer between producers (API, UI, IDE, worker, MCP, router, locks) and LangGraph/runtime consumers; product behavior is implemented under **100O**, placed after **100C** in §2–§3. Nike sits **after** the API in the **canonical processing chain** (see “Backend as work-processing authority” above); the API ingests; the worker runs the default Nike dispatcher (**100O**).
 
 **Components:** `trident-api` (control + APIs), `trident-worker` (async jobs), `trident-exec` (MCP broker), `trident-web` (control plane UI), optional **Code-OSS IDE** client via extension/bridge—all agree on backend state (see `000O`, `100A` layout).
 
@@ -122,7 +134,7 @@ TRIDENT_IMPLEMENTATION_DIRECTIVE_<STEP>_<TITLE_SLUG>.md
 ```
 
 **Example — 100A:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100A_REPOSITORY_RUNTIME_SKELETON.md`  
-**Example — 100O (when issued):** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100O_*` — Nike implementation per **000P**.  
+**Example — 100O:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100O_NIKE_EVENT_ORCHESTRATOR.md` — Nike implementation per **000P** (worker dispatcher; backend agent-hook extensibility per Manifest §2 principles 12–13).  
 Fix directives: under `TRIDENT_FIX_DIRECTIVES_001_005/` or matching `TRIDENT_FIX_DIRECTIVE_<NNN>_*.md`.
 
 ---
@@ -231,7 +243,7 @@ Abbreviated summary only; **acceptance and proof follow the implementation direc
 
 1. Read **Policy**, **§2** (order), and **§3** row for the next step; open **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100A_…`** and only the LLDs listed there if starting **100A**.  
 2. Build skeleton per **100A** until directive acceptance; checkpoint.  
-3. Follow **100B → 100C → 100O → 100D** using each directive’s acceptance criteria (100O when issued).  
+3. Follow **100B → 100C → 100O → 100D** using each directive’s acceptance criteria (**100O** implementation directive issued; see filename under §3.1).  
 4. After **100D** passes, open **FIX 004**; implement and prove before **100G**.  
 5. Continue **100E → 100F → 100G**; implement **FIX 005** before treating external APIs as production-ready.  
 6. Complete **100H**; implement **FIX 002** before **100I**.  

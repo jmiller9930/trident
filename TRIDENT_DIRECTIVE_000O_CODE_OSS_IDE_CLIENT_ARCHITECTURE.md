@@ -41,12 +41,29 @@ The backend remains the system of record for:
 
 ## 3. Architecture Model
 
+### 3.1 Backend work-processing authority
+
+The **backend** is the **work-processing authority**. The IDE is a **Cursor-style frontend** (edit, navigate, present state). **Agent workflows** — including future **backend-managed agent types**: **Engineer agent**, **Reviewer agent**, **Documentation agent**, **Debugger agent**, **Test agent**, **Security review agent**, **Performance review agent**, **Deployment/release agent** — **must** run through **backend-governed** services (`IDE / Web → API → Nike → LangGraph → Agents / Memory / Router / MCP / Proof`). **Agent logic must not** live as **independent IDE-side execution** (no shadow orchestration, no LLM loop in the extension that replaces API/Nike/LangGraph).
+
+**Canonical product chain:**
+
+```text
+IDE / Web → Trident API → Nike (000P / 100O) → LangGraph → Agents / Memory / Router / MCP / Proof
+        (with Git + file-lock governance on mutation paths)
+```
+
+The API **ingests** requests and events; **Nike** (per **000P**, implemented under **100O**) **routes** and coordinates; **LangGraph** remains workflow authority. The IDE extension **does not** host the agent runtime.
+
+### 3.2 Component stack (display order)
+
 ```text
 Trident Code - OSS IDE Client
         ↓
 Trident IDE Extension / Client Bridge
         ↓
-Trident API Gateway
+Trident API
+        ↓
+Nike Event Orchestrator
         ↓
 LangGraph Workflow Engine
         ↓

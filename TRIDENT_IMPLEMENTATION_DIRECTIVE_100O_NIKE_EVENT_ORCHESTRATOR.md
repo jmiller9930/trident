@@ -38,6 +38,12 @@ This implementation directive is governed by:
 
 LangGraph remains the workflow authority (**000P §8**). Nike may **dispatch** events and **trigger** graph evaluation per policy; it may not skip nodes, force closure, or replace ledger/graph truth.
 
+### 3.1 Documentation alignment — backend agent hooks
+
+**Manifest** and **Master Execution Guide** lock: the **backend** is the work-processing authority; **IDE / Web → API → Nike → LangGraph** is the canonical chain; **agent logic must not** run as **independent IDE-side execution**.
+
+**000P §3.3** names **future backend-managed agent roles** whose behavior must be addable **without Nike/API/LangGraph redesign**: Engineer agent, Reviewer agent, Documentation agent, Debugger agent, Test agent, Security review agent, Performance review agent, Deployment/release agent. **100O** implementations must keep **event_type** / **payload** / **handler** extension points sufficient to route those roles through **server-side** graph and services as they are introduced (see **§6.1**; no LLM inside Nike; no IDE orchestrator).
+
 ---
 
 ## 4. Runtime Placement (Authoritative)
@@ -84,6 +90,21 @@ Minimum subset that **must** have real routing behavior in **100O** (exact list 
 
 - **`DIRECTIVE_CREATED`** → enqueue downstream handling path that leads to **LangGraph wakeup** per §15 (must not bypass graph).
 - Additional types as stubs or passthrough per §11.
+
+### 6.1 Forward-compatible hooks (backend-managed agent types)
+
+Per **Manifest** principles 12–13 and **000P §3.3**, Nike **must** implement **event_type**, **payload**, and **handler-registry** extension points so these agent classes can be introduced later **without** redesign of ingest → worker dispatcher → LangGraph wakeup spine:
+
+- Engineer agent  
+- Reviewer agent  
+- Documentation agent  
+- Debugger agent  
+- Test agent  
+- Security review agent  
+- Performance review agent  
+- Deployment/release agent  
+
+New behavior is added by **registering routes** and **LangGraph/service integrations**, **not** by moving orchestration into the IDE or adding LLM calls to Nike.
 
 ---
 

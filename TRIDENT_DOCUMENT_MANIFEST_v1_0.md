@@ -49,6 +49,15 @@ The system is governed by these non-negotiable principles:
 9. Git and file locking are mandatory for mutation.
 10. Proof objects are required for closure.
 11. The UI must expose real workflow, memory, Git, lock, execution, and proof state.
+12. **The backend is the work-processing authority.** The IDE is a Cursor-style frontend/editor surface; the web UI is a control-plane frontend. **Agent workflows** must run through **backend-governed** services — **not** as independent IDE-side execution. Canonical processing chain:
+
+    ```text
+    IDE / Web → API → Nike → LangGraph → Agents / Memory / Router / MCP / Proof
+    ```
+
+    Git and file-lock governance applies on governed mutation paths; it does not replace this chain.
+
+13. **Nike and event routing** must be designed so **future backend-managed agent types** can be added **without redesign** of the API → Nike → LangGraph spine. Minimum named hooks (graph nodes, events, or server-side handlers — not IDE-local orchestrators): **Engineer agent**, **Reviewer agent**, **Documentation agent**, **Debugger agent**, **Test agent**, **Security review agent**, **Performance review agent**, **Deployment/release agent**. Details: **Master Execution Guide §1**, **000P §3.3**, **100O** implementation alignment.
 
 ---
 
@@ -134,11 +143,11 @@ The system is governed by these non-negotiable principles:
 **Depends on:** TRIDENT-DIRECTIVE-000B (and prerequisite foundation/directives cited in 000P).  
 **Produces:** Nike orchestration contract for implementation directive **100O**.
 
-#### TRIDENT-IMPLEMENTATION-DIRECTIVE-100O (future)
-**File:** To be issued (`TRIDENT_IMPLEMENTATION_DIRECTIVE_100O_*`)  
+#### TRIDENT-IMPLEMENTATION-DIRECTIVE-100O
+**File:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100O_NIKE_EVENT_ORCHESTRATOR.md`  
 **Type:** Implementation Directive  
-**Status:** Planned  
-**Purpose:** Implement Nike per **000P**, sequenced in Master Execution Guide after **100C** and before **100D**.
+**Status:** Issued  
+**Purpose:** Implement Nike per **000P** (worker dispatcher, ingest API, persistence, LangGraph wakeup boundary). Sequenced after **100C**, before **100D**. Must preserve backend agent-hook extensibility per principles 12–13.
 
 ---
 
