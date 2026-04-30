@@ -914,7 +914,7 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 
 ### Step 3 Build — **PASS** (pending architect ACCEPT)
 
-- **Commit:** **`6841e67`**
+- **Commit:** **`806e2c3`**
 - **Stack:** React 18 + Vite + TypeScript; **`npm run build`** + **`vitest`** (2 tests) **PASS**.
 - **Delivery:** `trident/frontend` — layout (nav / workspace / control rail); live **`fetch`** to **`/v1/*`** via **`getApiBase()`** (supports **`TRIDENT_PUBLIC_BASE_URL`** or same-origin proxy).
 - **Nginx (100U):** `nginx.conf.template` — proxies **`${TRIDENT_BASE_PATH}/api/`** → **`trident-api`**; entrypoint sets **`TRIDENT_NGINX_LOCATION_API`**; **`docker-compose`** default **`TRIDENT_PUBLIC_BASE_URL`** empty for **trident-web** (same-origin).
