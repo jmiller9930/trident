@@ -769,11 +769,50 @@ Formal integration of **model cadre** policy across **Manifest v1.0**, **Master 
 
 ### Gate (program)
 
-**100I planning / implementation remain paused** until program **ACCEPT** on **`DOC_MODEL_CADRE_INTEGRATION`** documentation bundle (this alignment). After acceptance, **100I** proceeds under clarified scope (**subsystem/workflow** proofs; **no** cadre implementation).
+~~**100I planning / implementation remain paused** until program **ACCEPT** on this bundle.~~ **CLOSED — ACCEPTED.**
+
+### Architect decision
+
+**`DOC_MODEL_CADRE_INTEGRATION = PASS`**. **`100I = UNBLOCKED`** (Read + Plan satisfied; **Step 3 — Build authorized**). Architecture consistent: cadre defined; **100I** validation-only; **100R** owns selection/routing/economics; **no** leakage into Nike / MCP / subsystem router / IDE. **No retroactive sync** to Master Guide v1.0 or Playbook (**v1.1** authoritative; hygiene deferred).
 
 ### Commit
 
 **`508c109`** — `docs(DOC_MODEL_CADRE_INTEGRATION): model cadre policy; 100I vs 100R scope`
+
+---
+
+## Directive: **100I** — Step 3 Build **AUTHORIZED**
+
+**Status:** **BUILD AUTHORIZED** (proof **not** yet returned)
+
+### Scope (validate only)
+
+```text
+Router → LangGraph → Agent → MCP → Memory → Audit → Proof → Final State
+```
+
+### Enforcement
+
+Do **not**: implement model routing (**100R**); call external APIs for routing; add product features; modify agent behavior; expand **100G** router scope; introduce UI logic (**100U**).
+
+### Proof
+
+**Mandatory:** **clawbot** (Postgres + compose) — full stdout/package; **not** local-only. Return template lines:
+
+```text
+Directive: 100I
+Status: PASS | FAIL
+Routing proof:
+Workflow execution proof:
+Agent execution proof:
+MCP proof:
+Memory proof:
+Audit chain proof:
+Proof objects:
+Final state:
+Restart persistence:
+Bypass violations:
+```
 
 ---
 
