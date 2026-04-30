@@ -182,7 +182,7 @@ Known Issues:
 
 Parent: Trident Manifest v1.0  
 Depends on: 100I  
-Unlocks: PRODUCTION APPROVAL
+Unlocks: **100U** — Web UI (`TRIDENT_IMPLEMENTATION_DIRECTIVE_100U_UI.md`). Production / go-live gating remains per Master Execution Guide after **100U** and Phase 2 milestones as applicable.
 
 ---
 

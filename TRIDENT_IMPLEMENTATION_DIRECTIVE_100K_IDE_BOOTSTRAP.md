@@ -163,7 +163,7 @@ Engineering must NOT:
 ## 10. Manifest Link
 
 Parent: Trident Manifest v1.0  
-Depends on: 000O, 100H  
+Depends on: 000O, **100U**  
 Unlocks: 100L — IDE File Lock + Governed Edit Flow
 
 ---

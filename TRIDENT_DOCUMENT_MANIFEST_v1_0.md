@@ -157,7 +157,23 @@ The system is governed by these non-negotiable principles:
 **Status:** Issued  
 **Purpose:** **Subsystem / work-request router** — routes intent to **MCP**, **LANGGRAPH**, **NIKE**, or **MEMORY** (read). Pure decision layer; **no** LLM selection, **no** execution, **no** MCP risk classification.  
 **Depends on:** **100F**  
-**Unlocks:** **100H**
+**Unlocks:** **100H** — Agent Execution Layer (backend; not UI)
+
+#### TRIDENT-IMPLEMENTATION-DIRECTIVE-100H
+**File:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100H_AGENT_EXECUTION_LAYER.md`  
+**Type:** Implementation Directive  
+**Status:** Issued  
+**Purpose:** **Agent Execution Layer (backend)** — governed agent work through LangGraph → MCP → receipts → memory/audit; **no UI responsibilities.**  
+**Depends on:** **100G**  
+**Unlocks:** **100I**
+
+#### TRIDENT-IMPLEMENTATION-DIRECTIVE-100U
+**File:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100U_UI.md`  
+**Type:** Implementation Directive  
+**Status:** Issued  
+**Purpose:** Web UI — LangGraph + system state visualization; real backend binding per **000H**.  
+**Depends on:** **100J**  
+**Unlocks:** **100K**
 
 #### TRIDENT-IMPLEMENTATION-DIRECTIVE-100R
 **File:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100R_MODEL_ROUTER_LOCAL_FIRST.md`  

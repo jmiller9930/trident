@@ -602,7 +602,7 @@ Program **ACCEPTED** **100G_FINAL** — subsystem router implementation + clawbo
 
 - **Issued:** program message — controlled agent work **only** through LangGraph → agent → MCP → receipts → governed memory + audit; **no** direct subprocess/shell, file/Git, lock bypass, or MCP bypass.
 - **Depends on:** **100G** (ACCEPTED).
-- **Repo conflict:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100H_UI.md` defines **100H as Web UI** (panels, visualization). The **newly issued 100H** is **backend Agent Execution Layer**. These cannot share one authoritative scope without program rename/supersede (pattern: **100G vs LLM doc → 100R**). Until resolved: treat **issued program text** as **100H agent scope**; UI work stays under existing filename / future renumber (e.g. **100H_UI → later step**) — **Master Execution Guide §3 row “100H UI” must be reconciled** when program picks numbering.
+- **ID alignment (resolved):** Web UI directive renamed to **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100U_UI.md`**, ID **100U**. **100H** is **Agent Execution Layer (backend)** only — **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100H_AGENT_EXECUTION_LAYER.md`**. Program doc: **DOC_100H_CONFLICT_RESOLUTION**.
 - **Code today:** LangGraph spine (`app/workflow/spine.py`) runs placeholder nodes (`record_node` + `MemoryWriter.write_from_graph` checkpoints); **no** `app/agents/` package. **MCPService** (`app/mcp/mcp_service.py`) performs classify/execute with receipts; **MemoryWriter** enforces nonce + ledger + agent_role alignment for graph writes.
 - **AgentRole enum** today: `ARCHITECT`, `ENGINEER`, `REVIEWER`, `DOCUMENTATION`, `SYSTEM`, `USER` — issued types include **DEBUGGER** and **DOCS** (map **DOCS → DOCUMENTATION** or extend enum in plan acceptance).
 
@@ -624,11 +624,28 @@ Program **ACCEPTED** **100G_FINAL** — subsystem router implementation + clawbo
 
 ### Build status
 
-**BLOCKED** — **Directive ID conflict:** existing **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100H_UI.md`** (**100H UI**) vs **100H Agent Execution Layer** (issued program scope). **No Step 3 Build** until program renames/renumbers the UI directive (or agent directive) and aligns Manifest / Master Execution Guide.
+**Documentation gate:** Directive ID conflict **resolved** in repo (**100U** = UI; **100H** = Agent Execution Layer). **Implementation Step 3 (build)** remains **BLOCKED** until program **ACCEPT** on **DOC_100H_CONFLICT_RESOLUTION** (per enforcement).
 
 ### Unlock
 
-**100I+** only after **100H Agent** build completes **post** ID conflict resolution.
+**100I+** only after **100H Agent** build completes **post** program ACCEPT on **DOC_100H_CONFLICT_RESOLUTION**.
+
+---
+
+## Directive: DOC_100H_CONFLICT_RESOLUTION
+
+**Status:** **COMPLETE (engineering)** — **PENDING** program **ACCEPT**
+
+### Summary
+
+- Renamed UI directive: **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100H_UI.md`** → **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100U_UI.md`** (git rename; content updated for **100U**).
+- Added **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100H_AGENT_EXECUTION_LAYER.md`** — **Agent Execution Layer (backend); no UI responsibilities.**
+- Updated **Manifest v1.0**, **Master Execution Guide v1.0 / v1.1**, **Governed Execution Playbook v1.0 / v1.1**, **100G / 100I / 100J / 100K** manifest links, **000P** placement line, **FIX 006** example chain, and **DIRECTIVE_WORKFLOW_LOG** (W-014).
+- Ordering: **100G → 100H (Agents) → 100I → 100J → 100U (UI) → 100K (IDE) → …**
+
+### Gate Decision
+
+Awaiting program **ACCEPT** to clear **100H** implementation build gate.
 
 ---
 

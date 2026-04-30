@@ -139,10 +139,10 @@ REJECTED → fix and resubmit
 ### Control plane spine
 
 ```text
-100A → 100B → 100C → 100D → 100E → 100F → 100G → 100H → 100I → 100J
+100A → 100B → 100C → 100O → 100D → 100E → 100F → 100G → 100H → 100I → 100J → 100U
 ```
 
-### IDE track (after `000O` prerequisites per Master Guide)
+### IDE track (after **100U** + **`000O`** prerequisites per Master Guide v1.1)
 
 ```text
 100K → 100L → 100M → 100N

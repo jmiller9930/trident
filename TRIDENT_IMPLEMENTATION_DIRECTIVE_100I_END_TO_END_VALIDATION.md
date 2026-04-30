@@ -41,7 +41,7 @@ Each stage must:
 - Respect Git + locks (100E)
 - Route through MCP for execution (100F)
 - Use **subsystem** router decisions (**100G**)
-- Reflect in UI (100H)
+- Reflect in UI when **100U** is complete; until then, prove system state via APIs and tests (no mock-as-proof)
 
 ---
 

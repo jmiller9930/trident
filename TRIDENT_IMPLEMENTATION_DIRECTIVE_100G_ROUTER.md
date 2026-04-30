@@ -189,7 +189,7 @@ Documentation conflict against legacy LLM **100G** text is **resolved** via **10
 
 Parent: Trident Manifest v1.0  
 Depends on: **100F**  
-Unlocks: **100H** — UI Implementation  
+Unlocks: **100H** — Agent Execution Layer (backend; `TRIDENT_IMPLEMENTATION_DIRECTIVE_100H_AGENT_EXECUTION_LAYER.md`). Web UI is **100U** (`TRIDENT_IMPLEMENTATION_DIRECTIVE_100U_UI.md`).  
 
 **Related (deferred):** **100R** — Model Router / local-first external escalation (**000G**).
 

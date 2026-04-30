@@ -404,7 +404,7 @@ Nike should be implemented after the LangGraph workflow spine exists and before 
 Recommended implementation order update:
 
 ```text
-100A → 100B → 100C → 100O (Nike) → 100D → 100E → 100F → 100G → 100H → 100I → 100J
+100A → 100B → 100C → 100O (Nike) → 100D → 100E → 100F → 100G → 100H → 100I → 100J → 100U
 ```
 
 IDE track remains:
@@ -455,7 +455,7 @@ Directive 000P is accepted when:
 
 Parent: Trident Manifest v1.0  
 Depends on: 000A–000O, Fix 004, Fix 003  
-Updates: 000B, 000C, 000H, 000I, 000J, 000K, 100C, 100D, 100H, 100I  
+Updates: 000B, 000C, 000H, 000I, 000J, 000K, 100C, 100D, 100H (Agent), 100U (UI), 100I  
 Unlocks: 100O — Nike Event Orchestrator Implementation
 
 ---

@@ -1,5 +1,7 @@
-# TRIDENT IMPLEMENTATION DIRECTIVE 100H
+# TRIDENT IMPLEMENTATION DIRECTIVE 100U
 ## UI Implementation (LangGraph + System State Visualization)
+
+**Renumbering note:** Formerly **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100H_UI.md`** — content preserved; ID **100H** is reserved for **Agent Execution Layer (backend)** (`TRIDENT_IMPLEMENTATION_DIRECTIVE_100H_AGENT_EXECUTION_LAYER.md`).
 
 ---
 
@@ -18,7 +20,7 @@ Covers:
 - Memory inspection panel
 - Git + file lock visibility
 - MCP execution + approval UI
-- Router decision visibility
+- Router decision visibility (subsystem router / **ROUTER_DECISION_MADE**; optional model-router UI when **100R** exists)
 - Multi-user awareness (basic)
 
 ---
@@ -87,22 +89,21 @@ Must display:
 - approval controls
 
 ### 7.5 Router
-- local vs external decision
-- reason
+- subsystem routing decision (local vs external path / target subsystem as exposed by API)
+- reason / audit reference
 
 ---
 
 ## 8. UI Data Binding
 
-UI must call backend APIs:
+UI must call backend APIs (paths per active API version / OpenAPI), including routes equivalent to:
 
-- /directives
-- /task_ledger
-- /memory
-- /git/status
-- /locks
-- /mcp/requests
-- /router/logs
+- directives / task ledger
+- memory
+- git status
+- locks
+- MCP requests / execution queue
+- subsystem router (e.g. route decision logs or `POST /api/v1/router/route` diagnostics as authorized)
 
 ---
 
@@ -160,8 +161,8 @@ Engineering must NOT:
 ## 14. Manifest Link
 
 Parent: Trident Manifest v1.0  
-Depends on: **100G** (Subsystem / work-request router)  
-Unlocks: 100I — End-to-End System Validation
+Depends on: **100J** (Deployment + Production Validation)  
+Unlocks: **100K** — IDE bootstrap (web control plane prerequisite per Master Execution Guide)
 
 ---
 

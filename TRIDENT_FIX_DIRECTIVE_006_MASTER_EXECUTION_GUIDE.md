@@ -55,8 +55,8 @@ Must explicitly define:
 ```text
 START HERE
 
-Phase 1:
-100A → 100B → 100C → 100D → 100E → 100F → 100G → 100H → 100I → 100J
+Phase 1 (canonical detail — prefer **Master Execution Guide v1.1** for **100O** / **100U** ordering):
+100A → 100B → 100C → 100O → 100D → 100E → 100F → 100G → 100H → 100I → 100J → 100U
 
 Phase 2 (IDE):
 100K → 100L → 100M → 100N

@@ -470,7 +470,7 @@ This architecture is accepted when:
 
 Parent: Trident Manifest v1.0  
 Depends on: 000A–000N  
-Updates: 000H, 000J, 000K, 100H  
+Updates: 000H, 000J, 000K, 100U  
 Unlocks: Implementation Directive 100K — Trident IDE Client Bootstrap
 
 ---
