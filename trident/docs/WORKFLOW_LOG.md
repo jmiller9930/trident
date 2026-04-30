@@ -1168,7 +1168,7 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 
 ### Step 2 — Plan (engineering)
 
-**Directive: `FIX_003_PLAN` · Status: `READY`**
+**Directive: `FIX_003_PLAN` · Status: `READY`** — log **`d9be1bf`** (**W-031**)
 
 **Architect constraints honored in plan:** **`POST .../locks/acquire`** and **`POST .../locks/release`** **request/response schemas unchanged** (behavior may set **`last_heartbeat_at`** internally on acquire). **No** Git / MCP / agent / router / memory subsurface changes. **Server-authoritative** stale transitions.
 
