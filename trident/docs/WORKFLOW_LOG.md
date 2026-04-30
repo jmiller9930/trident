@@ -584,4 +584,48 @@ After plan ACCEPT + build + proof: **100H+** per program.
 
 ---
 
+## Directive: 100G_FINAL — Program acceptance
+
+**Status:** PASS **(ACCEPTED)**
+
+### Gate Decision
+
+Program **ACCEPTED** **100G_FINAL** — subsystem router implementation + clawbot proof closed; **100H** may proceed under governed execution.
+
+---
+
+## Directive: 100H — Agent execution layer
+
+**Status:** PLANNING
+
+### Plan (Step 1 — Read)
+
+- **Issued:** program message — controlled agent work **only** through LangGraph → agent → MCP → receipts → governed memory + audit; **no** direct subprocess/shell, file/Git, lock bypass, or MCP bypass.
+- **Depends on:** **100G** (ACCEPTED).
+- **Repo conflict:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100H_UI.md` defines **100H as Web UI** (panels, visualization). The **newly issued 100H** is **backend Agent Execution Layer**. These cannot share one authoritative scope without program rename/supersede (pattern: **100G vs LLM doc → 100R**). Until resolved: treat **issued program text** as **100H agent scope**; UI work stays under existing filename / future renumber (e.g. **100H_UI → later step**) — **Master Execution Guide §3 row “100H UI” must be reconciled** when program picks numbering.
+- **Code today:** LangGraph spine (`app/workflow/spine.py`) runs placeholder nodes (`record_node` + `MemoryWriter.write_from_graph` checkpoints); **no** `app/agents/` package. **MCPService** (`app/mcp/mcp_service.py`) performs classify/execute with receipts; **MemoryWriter** enforces nonce + ledger + agent_role alignment for graph writes.
+- **AgentRole enum** today: `ARCHITECT`, `ENGINEER`, `REVIEWER`, `DOCUMENTATION`, `SYSTEM`, `USER` — issued types include **DEBUGGER** and **DOCS** (map **DOCS → DOCUMENTATION** or extend enum in plan acceptance).
+
+### Plan (Step 2 — Plan, pre-build)
+
+1. **Layout:** `backend/app/agents/` — `agent_registry.py`, `agent_context.py`, `agent_executor.py`, `agent_service.py`, `agent_logger.py` (audit helpers).
+2. **Invocation boundary:** Agents run **only** when called from **compiled LangGraph nodes** (same session/run nonce as today); `AgentExecutor.run(...)` receives `directive_id`, `task_id`, `agent_role`, node `context` dict, scoped **memory snapshot** (reuse `MemoryReader` / scoped query — read-only).
+3. **Output schema:** Pydantic model matching issued JSON: `decision`, optional structured `mcp_request`, optional `memory_write`, `status` ∈ `CONTINUE | COMPLETE | BLOCKED`.
+4. **MCP path:** If `mcp_request` present, translate to existing **`MCPExecuteRequest`** (or internal call to `MCPService.execute`) — **single code path** to execution; agents never call subprocess or HTTP to MCP aside from in-process service call (still “through MCP layer”).
+5. **Memory path:** If `memory_write` present, call **`MemoryWriter.write_from_graph`** only (same validations as spine checkpoints); reject writes if agent_role / nonce mismatch.
+6. **Audits:** Add `AuditEventType` values **`AGENT_INVOCATION`**, **`AGENT_DECISION`**, **`AGENT_MCP_REQUEST`**, **`AGENT_RESULT`**; `agent_logger.py` records chain tied to `directive_id` / workspace / project.
+7. **Registry:** Map **ENGINEER**, **REVIEWER**, **DEBUGGER**, **DOCS** (→ DOCUMENTATION or new role) to handler stubs or strategy objects; start deterministic/simulated decisions like current spine until model-backed behavior is in scope.
+8. **Tests:** Agent module must not contain `subprocess` / `os.system`; integration tests with DB + `TestClient` optional; unit tests prove MCP invocation goes through `MCPService`, memory through `MemoryWriter`, audits ordered.
+9. **Proof (later build):** LangGraph invokes agent node → MCP receipt row + memory row + full audit chain; static ban-list import test like **100G**.
+
+### Plan Decision
+
+**PENDING** — await program **ACCEPTED** on this plan **and** explicit resolution of **100H UI vs 100H Agent** document/manifest naming. **No Step 3 Build** until then.
+
+### Unlock
+
+After plan ACCEPT + doc reconciliation + build + proof: **100I+** per program.
+
+---
+
 END
