@@ -912,16 +912,31 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 
 **Authoritative file:** **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100U_UI.md`** · **Depends on:** **100L** · **Unlocks:** **100K** · **LLD gate:** **000H**
 
-### Step 3 Build — **PASS** (pending architect ACCEPT)
+### Step 3 Build — **PASS** → **PASS_CONFIRMED** (clawbot)
 
-- **Commit:** **`806e2c3`**
+- **Bundle commit:** **`806e2c3`** · **getApiBase fix:** **`34ba2a1`** (avoid doubling **`TRIDENT_BASE_PATH`** when **`TRIDENT_PUBLIC_BASE_URL`** already includes mount path)
 - **Stack:** React 18 + Vite + TypeScript; **`npm run build`** + **`vitest`** (2 tests) **PASS**.
 - **Delivery:** `trident/frontend` — layout (nav / workspace / control rail); live **`fetch`** to **`/v1/*`** via **`getApiBase()`** (supports **`TRIDENT_PUBLIC_BASE_URL`** or same-origin proxy).
 - **Nginx (100U):** `nginx.conf.template` — proxies **`${TRIDENT_BASE_PATH}/api/`** → **`trident-api`**; entrypoint sets **`TRIDENT_NGINX_LOCATION_API`**; **`docker-compose`** default **`TRIDENT_PUBLIC_BASE_URL`** empty for **trident-web** (same-origin).
 - **Git panel:** limitation banner + GIT-prefixed proof types from existing memory read — **no** new Git APIs.
 - **LangGraph / state:** directive detail + **`/v1/memory/directive/{id}`** (`task_ledger`, `handoffs`, entries, proofs) — **no** backend changes.
 - **Backend tests:** **`pytest` 77 passed** (unchanged).
-- **Docs:** **`OPERATIONS_RUNBOOK.md`** — web→API proxy note.
+- **Docs:** **`OPERATIONS_RUNBOOK.md`** — web→API proxy note; **`docs/proof_100u_clawbot/README.md`** — clawbot capture notes.
+
+### Clawbot mandatory verification (host **clawbot.a51.corp**)
+
+- **`docker compose ps`:** all stack services **Up (healthy)** including **`trident-web`** on **`0.0.0.0:3000->80/tcp`**.
+- **HTTP:** **`GET http://127.0.0.1:3000/`** → **200**; **`GET http://127.0.0.1:3000/trident/api/health`** → **`{"status":"ok","service":"trident-api"}`**. **`GET /api/health`** on the web port returns the SPA shell (**200 HTML**) when only **`${TRIDENT_BASE_PATH}/api/`** is proxied — use **`/trident/api/health`** for JSON under **`TRIDENT_BASE_PATH=/trident`**.
+- **Run note:** **`TRIDENT_PUBLIC_BASE_URL=`** on **`trident-web`** during confirmation so the browser uses same-origin **`/trident/api`** via nginx (avoids CORS if a stale cross-origin URL was set).
+- **UI screenshots:** **`trident/docs/proof_100u_clawbot/100u-directives-and-panels.png`**, **`100u-mcp-router-rail.png`**.
+
+---
+
+## Directive: **100U_FINAL** — Program CONFIRMED
+
+**Status:** **CLOSED** — **PASS_CONFIRMED** (clawbot build/up/curl + UI captures).
+
+**Next:** **100K** — IDE bootstrap — unblocked per manifest after **100U** acceptance.
 
 ---
 
