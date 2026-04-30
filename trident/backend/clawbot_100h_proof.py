@@ -243,6 +243,8 @@ def main() -> int:
             if mem:
                 _print_kv("Memory_write_proof", f"title={mem.title} vector_state={mem.vector_state}")
             _print_kv("Status", "PASS" if ok else "FAIL")
+            if ok:
+                _print_kv("restart_verify_PASS", "1")
             return 0 if ok else 2
 
         uid, wsid, pid = _ensure_seed(session)

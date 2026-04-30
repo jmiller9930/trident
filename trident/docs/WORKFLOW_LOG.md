@@ -698,7 +698,22 @@ docker compose exec trident-api env TRIDENT_100H_VERIFY_DIRECTIVE_ID='<directive
 docker compose ps
 ```
 
-Script: **`trident/backend/clawbot_100h_proof.py`** (copied into **`trident-api`** image). Prints **`100h_clawbot_proof_ok=1`** and **`Status: PASS`** when DB audit subsequence + MCP **`EXECUTION_LOG`** proof + **`agent:engineer`** memory row + closed ledger hold + **`MCP_no_bypass_guard`** (**every `MCP_EXECUTION_COMPLETED` must have `AGENT_MCP_REQUEST` in the audit window since the prior completion**).
+Script: **`trident/backend/clawbot_100h_proof.py`** (copied into **`trident-api`** image). Validates ordered audit subsequence, MCP **`EXECUTION_LOG`** proof, **`agent:engineer`** memory row, directive **`COMPLETE`** / ledger **`CLOSED`**, and **`MCP_no_bypass_guard`** (**each `MCP_EXECUTION_COMPLETED` has `AGENT_MCP_REQUEST` in the audit window since the prior completion** — proves **`AGENT_MCP_REQUEST → MCP_EXECUTION_COMPLETED`** per completion window).
+
+### Clawbot PASS markers (all required — **do not unlock 100I** until present)
+
+```text
+100h_clawbot_proof_ok=1
+Status: PASS                    # primary workflow run (exit 0)
+MCP_no_bypass_guard: PASS       # AGENT_MCP_REQUEST precedes each MCP_EXECUTION_COMPLETED window
+restart verify PASS             # second run: TRIDENT_100H_VERIFY_DIRECTIVE_ID=… → exit 0, Status: PASS, restart_verify_PASS=1
+directive COMPLETE
+ledger CLOSED
+agent:engineer memory row       # MemoryEntry title prefix agent:engineer
+EXECUTION_LOG proof object      # ProofObject proof_type EXECUTION_LOG for directive
+```
+
+**Enforcement:** **100I** remains **BLOCKED** until program accepts clawbot evidence with **every** marker above (plus structured return template / **`docker compose ps`** as required by governance).
 
 ### Return template (paste back to program)
 
