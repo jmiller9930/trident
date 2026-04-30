@@ -596,14 +596,14 @@ Program **ACCEPTED** **100G_FINAL** — subsystem router implementation + clawbo
 
 ## Directive: 100H — Agent execution layer
 
-**Status:** STEP 3 **COMPLETE (engineering proof)** — authorized after program **ACCEPT** **DOC_100H_CONFLICT_RESOLUTION** at **`60df87f`**
+**Status:** **CONDITIONAL PASS** — code + unit/integration proof **PASS**; **final program acceptance blocked** until **100H_FINAL clawbot** (Postgres + deployed stack) **PASS**
 
 ### Plan (Step 1 — Read)
 
 - **Issued:** program message — controlled agent work **only** through LangGraph → agent → MCP → receipts → governed memory + audit; **no** direct subprocess/shell, file/Git, lock bypass, or MCP bypass.
 - **Depends on:** **100G** (ACCEPTED).
 - **ID alignment (resolved):** Web UI directive renamed to **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100U_UI.md`**, ID **100U**. **100H** is **Agent Execution Layer (backend)** only — **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100H_AGENT_EXECUTION_LAYER.md`**. Program doc: **DOC_100H_CONFLICT_RESOLUTION**.
-- **Code today:** LangGraph spine (`app/workflow/spine.py`) runs placeholder nodes (`record_node` + `MemoryWriter.write_from_graph` checkpoints); **no** `app/agents/` package. **MCPService** (`app/mcp/mcp_service.py`) performs classify/execute with receipts; **MemoryWriter** enforces nonce + ledger + agent_role alignment for graph writes.
+- **Code today:** LangGraph spine (`app/workflow/spine.py`) runs **`record_node`** + **`MemoryWriter.write_from_graph`** checkpoints; **engineer** node invokes **`app/agents/`** (`run_engineer_agent_phase` → **`MCPService.execute`** + **`MemoryWriter.write_from_graph`**). **MCPService** performs classify/execute with receipts; **MemoryWriter** enforces nonce + ledger + agent_role alignment for graph writes.
 - **AgentRole enum** today: `ARCHITECT`, `ENGINEER`, `REVIEWER`, `DOCUMENTATION`, `SYSTEM`, `USER` — issued types include **DEBUGGER** and **DOCS** (map **DOCS → DOCUMENTATION** or extend enum in plan acceptance).
 
 ### Plan (Step 2 — Plan, pre-build)
@@ -635,15 +635,15 @@ Program **ACCEPTED** **100G_FINAL** — subsystem router implementation + clawbo
 
 ### Build status
 
-**DOC_100H_CONFLICT_RESOLUTION:** **PASS** (accepted **`60df87f`**). **Step 3 Build:** **AUTHORIZED**.
+**DOC_100H_CONFLICT_RESOLUTION:** **PASS** (accepted **`60df87f`**). **Step 3 implementation:** merged on **`main`** (see **`100H_FINAL`**). **Program closure:** **pending** **`100H_FINAL` clawbot PASS**.
 
 ### Unlock
 
-**100I** after program **ACCEPT** on **100H_FINAL** engineering proof (below).
+**100I** — **BLOCKED** until program **ACCEPT** on **`100H_FINAL`** with **clawbot Postgres + runtime** proof (below). **Do not** add UI (**100U**); **do not** expand agent behavior; **do not** bypass MCP or **`MemoryWriter`**.
 
-### Engineering proof (Step 3)
+### Engineering proof (Step 3 — local)
 
-- **`pytest`:** **72 passed** (full `trident/backend` suite; includes **`tests/test_agents_100h.py`**).
+- **`pytest`:** full **`trident/backend`** suite green (includes **`tests/test_agents_100h.py`**).
 - **Chain:** engineer spine node → **`run_engineer_agent_phase`** → **`AGENT_*`** audits → **`MCPService.execute`** → **`MemoryWriter.write_from_graph`** → **`AGENT_RESULT`**.
 - **Commit:** git **`HEAD`** on **`main`** — message prefix **`feat(100H): agent execution layer`** (see **`100H_FINAL`**).
 
@@ -668,19 +668,59 @@ Program **ACCEPTED** **100G_FINAL** — subsystem router implementation + clawbo
 
 ## Directive: 100H_FINAL — Engineering proof (Step 3)
 
-**Status:** **PASS** (engineering)
+**Status:** **CONDITIONAL PASS** — **local engineering PASS**; **CLAWBOT PROOF REQUIRED** for final acceptance
 
-### Proof checklist (filled)
+### Proof checklist (local — filled)
 
 - **Scope:** `app/agents/` — `schemas`, `agent_context`, `agent_logger`, `agent_registry`, `agent_executor`; **`engineer`** spine node calls **`run_engineer_agent_phase`** after **`record_node`**.
-- **Audits:** `AGENT_INVOCATION`, `AGENT_DECISION`, `AGENT_MCP_REQUEST`, `AGENT_RESULT` plus **`MCP_EXECUTION_REQUESTED`** / **`MCP_EXECUTION_COMPLETED`** from **`MCPService`** and **`MEMORY_WRITE`** from **`MemoryWriter`** (ordered subsequence asserted in tests).
-- **Memory:** Stub supplies **`memory_write`** → **`MemoryWriter.write_from_graph`** only; engineer **`_spine_memory_checkpoint`** skipped when stub writes (no duplicate spine checkpoint for that node).
+- **Audits (expected for workflow directive):** `AGENT_INVOCATION` → `AGENT_DECISION` → `AGENT_MCP_REQUEST` → `MCP_EXECUTION_REQUESTED` → `MCP_EXECUTION_COMPLETED` → `MEMORY_WRITE` → `AGENT_RESULT` (ordered subsequence).
+- **Memory:** Stub supplies **`memory_write`** → **`MemoryWriter.write_from_graph`** only; structured row authoritative; **vector** state recorded (**`VECTOR_INDEXED`** preferred when Chroma healthy).
 - **Hygiene:** `app/agents/**/*.py` contains **no** `subprocess` / `os.system` (see **`tests/test_agents_100h.py`**).
-- **Commands run:** `cd trident/backend && python3 -m pytest -q` → **72 passed**.
+- **Tests:** `cd trident/backend && python3 -m pytest -q` — full suite green in engineering CI/local.
+
+### Clawbot runtime proof (required)
+
+On **clawbot** (example — adjust path to repo layout):
+
+```bash
+ssh jmiller@clawbot.a51.corp
+cd ~/code_projects/trident/trident/trident   # or canonical clone path
+git pull origin main
+docker compose down
+docker compose up -d --build
+docker compose exec trident-api python -m alembic upgrade head
+docker compose exec trident-api python -m alembic current
+docker compose exec trident-api python clawbot_100h_proof.py
+# Optional: set TRIDENT_GIT_HEAD=$(git rev-parse HEAD) on host, then:
+# docker compose exec -e TRIDENT_GIT_HEAD="$TRIDENT_GIT_HEAD" trident-api python clawbot_100h_proof.py
+docker compose restart trident-api
+docker compose exec trident-api env TRIDENT_100H_VERIFY_DIRECTIVE_ID='<directive_uuid_from_script_output>' python clawbot_100h_proof.py
+docker compose ps
+```
+
+Script: **`trident/backend/clawbot_100h_proof.py`** (copied into **`trident-api`** image). Prints **`100h_clawbot_proof_ok=1`** and **`Status: PASS`** when DB audit subsequence + MCP **`EXECUTION_LOG`** proof + **`agent:engineer`** memory row + closed ledger hold.
+
+### Return template (paste back to program)
+
+```text
+Directive: 100H_FINAL
+Status: PASS | FAIL
+Git HEAD:
+Alembic current:
+Workflow run output:
+Agent invocation proof:
+MCP receipt proof:
+Memory write proof:
+Audit chain proof:
+Directive/ledger final state:
+Restart persistence:
+docker compose ps:
+Known gaps:
+```
 
 ### Commit
 
-Merge on **`main`**: **`feat(100H): agent execution layer — LangGraph engineer hook, MCP, audits`**
+Merge on **`main`**: **`feat(100H): agent execution layer — LangGraph engineer hook, MCP, audits`** (+ **`clawbot_100h_proof.py`** when merged)
 
 ---
 
