@@ -8,13 +8,15 @@ export function normalizeBasePath(raw: string | undefined): string {
 
 /**
  * JSON API prefix (no trailing slash).
- * Prefer same-origin `/…/api` via nginx proxy when `PUBLIC_BASE_URL` is empty.
+ * - Same-origin: `origin + BASE_PATH + /api` (nginx proxy), when `PUBLIC_BASE_URL` is empty.
+ * - Cross-origin: `PUBLIC_BASE_URL + /api` — URL must already be the API mount (e.g. `https://host/trident`),
+ *   do not append `BASE_PATH` again (avoids `/trident/trident/api` when both are set).
  */
 export function getApiBase(): string {
   const pub = (window.__TRIDENT_PUBLIC_BASE_URL__ ?? "").trim();
   const bp = normalizeBasePath(window.__TRIDENT_BASE_PATH__);
   if (pub) {
-    return `${pub.replace(/\/+$/, "")}${bp}/api`;
+    return `${pub.replace(/\/+$/, "")}/api`;
   }
   return `${window.location.origin}${bp}/api`;
 }

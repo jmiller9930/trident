@@ -15,7 +15,7 @@ Operations reference for `trident/docker-compose.yml`. **Do not** use destructiv
 | **trident-exec** | MCP broker | (service-local config) |
 | **trident-web** | Web UI (nginx + **100U** SPA) | `TRIDENT_BASE_PATH`, `TRIDENT_PUBLIC_BASE_URL` |
 
-**Web UI → API (100U):** With **`TRIDENT_PUBLIC_BASE_URL` empty** (default in compose), the browser calls **same-origin** `…/api/…` on the web port; **nginx** proxies that path to **`trident-api:8000`** (including **`TRIDENT_BASE_PATH`** prefix when set). Set **`TRIDENT_PUBLIC_BASE_URL`** only if the UI must talk to an API on a **different origin** (then ensure CORS is acceptable for your deployment).
+**Web UI → API (100U):** With **`TRIDENT_PUBLIC_BASE_URL` empty** (default in compose), the browser calls **same-origin** `{ORIGIN}{TRIDENT_BASE_PATH}/api/…`; **nginx** proxies that prefix to **`trident-api`**. If **`TRIDENT_PUBLIC_BASE_URL`** is set (cross-origin), it must be the **full API public root** including path (e.g. `https://host/trident`); the UI uses `{PUBLIC_BASE_URL}/api` — **do not** duplicate **`TRIDENT_BASE_PATH`** in that URL.
 
 **Secrets:** Never log full connection strings or passwords. Use env files or orchestrator secrets; rotate default `changeme_local_only` before any shared deployment.
 
