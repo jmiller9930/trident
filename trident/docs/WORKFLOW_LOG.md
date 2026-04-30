@@ -551,7 +551,7 @@ After plan ACCEPT + build + proof: **100H+** per program.
 
 ## Directive: 100G — Step 3 Build (subsystem router)
 
-**Status:** PASS *(clawbot proof: run `clawbot_100g_proof.py` on deployment target; see engineering return block)*
+**Status:** PASS
 
 ### Plan Decision
 
@@ -571,15 +571,16 @@ After plan ACCEPT + build + proof: **100H+** per program.
 
 ### Proof
 
-Git commit on merge; clawbot: `docker compose exec trident-api python clawbot_100g_proof.py` → expect `100g_clawbot_proof_ok=1`.
+- **Git:** implementation **`1595f05`**, proof script fix **`efccb69`** (verify `git log -2 --oneline` on `main`).
+- **Clawbot (`2026-04-30`):** `docker compose exec trident-api python clawbot_100g_proof.py` → four `route_*_status=200`, `ambiguous_status=200`, `router_decision_made_count=5`, **`100g_clawbot_proof_ok=1`**.
 
 ### Gate Decision
 
-**PASS** when unit tests + clawbot script green; **100H** blocked until program confirms clawbot receipt.
+**PASS** — unit tests + clawbot proof green.
 
 ### Unlock
 
-**100H** after program accepts clawbot proof for **100G**.
+**100H** authorized only after program gate on clawbot receipt (this section satisfies engineering proof).
 
 ---
 
