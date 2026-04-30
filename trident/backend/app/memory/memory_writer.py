@@ -1,13 +1,17 @@
-"""Graph-governed memory writes + audit (100D)."""
+"""Graph-governed memory writes + audit (100D) + FIX 004 vector lifecycle."""
 
 from __future__ import annotations
 
+import logging
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.config.settings import Settings, settings as app_settings
+from app.memory.constants import MemoryVectorState
+from app.memory.sequence import allocate_memory_sequence
 from app.models.enums import AuditActorType, AuditEventType, TaskLifecycleState
 from app.models.memory_entry import MemoryEntry
 from app.repositories.audit_repository import AuditRepository
@@ -15,6 +19,8 @@ from app.workflow.persistence import load_spine_context
 
 from app.memory.exceptions import MemoryWriteForbidden
 from app.memory.vector_service import VectorMemoryService
+
+logger = logging.getLogger("trident.memory.writer")
 
 
 class MemoryWriter:
@@ -100,6 +106,82 @@ class MemoryWriter:
             payload=payload,
         )
 
+    def retry_vector_index_via_guarded_api(
+        self,
+        *,
+        directive_id: uuid.UUID,
+        task_ledger_id: uuid.UUID,
+        agent_role: str,
+        workflow_run_nonce: str,
+        memory_entry_id: uuid.UUID,
+    ) -> MemoryEntry:
+        directive, _ledger, _graph = self._validate_graph_context(
+            directive_id=directive_id,
+            task_ledger_id=task_ledger_id,
+            agent_role=agent_role,
+            workflow_run_nonce=workflow_run_nonce,
+        )
+        row = self._session.get(MemoryEntry, memory_entry_id)
+        if row is None:
+            raise MemoryWriteForbidden("memory_entry_not_found")
+        if row.directive_id != directive.id:
+            raise MemoryWriteForbidden("memory_entry_directive_mismatch")
+        return self._retry_vector_index(row, directive=directive)
+
+    def _retry_vector_index(self, row: MemoryEntry, *, directive) -> MemoryEntry:
+        """Re-attempt Chroma upsert; structured row stays authoritative."""
+        row.vector_state = MemoryVectorState.VECTOR_PENDING.value
+        row.vector_last_error = None
+        self._session.flush()
+
+        doc_id = str(row.id)
+        try:
+            self._vector.upsert_document(
+                doc_id=doc_id,
+                document=row.body_text,
+                project_id=str(directive.project_id),
+                directive_id=str(directive.id),
+                memory_kind=row.memory_kind,
+            )
+            row.chroma_document_id = doc_id
+            row.vector_state = MemoryVectorState.VECTOR_INDEXED.value
+            row.vector_indexed_at = datetime.now(timezone.utc)
+            row.vector_last_error = None
+            self._session.flush()
+            self._audit.record(
+                event_type=AuditEventType.MEMORY_VECTOR_REINDEX_SUCCESS,
+                event_payload={
+                    "memory_entry_id": str(row.id),
+                    "vector_state": row.vector_state,
+                },
+                actor_type=AuditActorType.SYSTEM,
+                actor_id="memory:vector_retry",
+                workspace_id=directive.workspace_id,
+                project_id=directive.project_id,
+                directive_id=directive.id,
+            )
+        except Exception as e:
+            logger.warning("event=memory_vector_reindex_failed entry_id=%s err=%s", row.id, e)
+            row.chroma_document_id = None
+            row.vector_state = MemoryVectorState.VECTOR_FAILED.value
+            row.vector_last_error = str(e)[:4000]
+            row.vector_indexed_at = None
+            self._session.flush()
+            self._audit.record(
+                event_type=AuditEventType.MEMORY_VECTOR_INDEX_FAILED,
+                event_payload={
+                    "memory_entry_id": str(row.id),
+                    "phase": "retry",
+                    "error": str(e)[:2000],
+                },
+                actor_type=AuditActorType.SYSTEM,
+                actor_id="memory:vector_retry",
+                workspace_id=directive.workspace_id,
+                project_id=directive.project_id,
+                directive_id=directive.id,
+            )
+        return row
+
     def _persist(
         self,
         *,
@@ -111,6 +193,7 @@ class MemoryWriter:
         memory_kind: str,
         payload: dict[str, Any],
     ) -> MemoryEntry:
+        seq = allocate_memory_sequence(self._session)
         row = MemoryEntry(
             directive_id=directive.id,
             project_id=directive.project_id,
@@ -121,19 +204,50 @@ class MemoryWriter:
             body_text=body,
             payload_json=payload,
             chroma_document_id=None,
+            memory_sequence=seq,
+            vector_state=MemoryVectorState.STRUCTURED_COMMITTED.value,
+            vector_last_error=None,
+            vector_indexed_at=None,
         )
         self._session.add(row)
         self._session.flush()
 
+        row.vector_state = MemoryVectorState.VECTOR_PENDING.value
+        self._session.flush()
+
         doc_id = str(row.id)
-        self._vector.upsert_document(
-            doc_id=doc_id,
-            document=body,
-            project_id=str(directive.project_id),
-            directive_id=str(directive.id),
-            memory_kind=memory_kind,
-        )
-        row.chroma_document_id = doc_id
+        try:
+            self._vector.upsert_document(
+                doc_id=doc_id,
+                document=body,
+                project_id=str(directive.project_id),
+                directive_id=str(directive.id),
+                memory_kind=memory_kind,
+            )
+            row.chroma_document_id = doc_id
+            row.vector_state = MemoryVectorState.VECTOR_INDEXED.value
+            row.vector_indexed_at = datetime.now(timezone.utc)
+            row.vector_last_error = None
+        except Exception as e:
+            logger.warning("event=memory_vector_index_failed entry_id=%s err=%s", row.id, e)
+            row.chroma_document_id = None
+            row.vector_state = MemoryVectorState.VECTOR_FAILED.value
+            row.vector_last_error = str(e)[:4000]
+            row.vector_indexed_at = None
+            self._audit.record(
+                event_type=AuditEventType.MEMORY_VECTOR_INDEX_FAILED,
+                event_payload={
+                    "memory_entry_id": str(row.id),
+                    "phase": "initial",
+                    "error": str(e)[:2000],
+                },
+                actor_type=AuditActorType.SYSTEM,
+                actor_id="memory:vector_index",
+                workspace_id=directive.workspace_id,
+                project_id=directive.project_id,
+                directive_id=directive.id,
+            )
+
         self._session.flush()
 
         self._audit.record(
@@ -141,6 +255,8 @@ class MemoryWriter:
             event_payload={
                 "memory_entry_id": str(row.id),
                 "memory_kind": memory_kind,
+                "memory_sequence": seq,
+                "vector_state": row.vector_state,
                 "title": title,
                 "task_ledger_id": str(ledger_id),
                 "agent_role": agent_role,

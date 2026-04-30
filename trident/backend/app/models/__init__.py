@@ -14,6 +14,7 @@ from app.models.file_lock import FileLock
 from app.models.graph_state import GraphState
 from app.models.handoff import Handoff
 from app.models.memory_entry import MemoryEntry
+from app.models.memory_sequence_anchor import MemorySequenceAnchor
 from app.models.project import Project
 from app.models.proof_object import ProofObject
 from app.models.task_ledger import TaskLedger
@@ -43,6 +44,7 @@ __all__ = [
     "GraphState",
     "Handoff",
     "MemoryEntry",
+    "MemorySequenceAnchor",
     "NikeAttemptOutcome",
     "NikeDeadLetterEvent",
     "NikeEvent",

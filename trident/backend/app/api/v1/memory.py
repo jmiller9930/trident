@@ -11,7 +11,12 @@ from app.db.session import get_db
 from app.memory.exceptions import MemoryWriteForbidden
 from app.memory.memory_reader import MemoryReader
 from app.memory.memory_writer import MemoryWriter
-from app.schemas.memory import MemoryWriteRequest, MemoryWriteResponse
+from app.schemas.memory import (
+    MemoryRetryVectorRequest,
+    MemoryRetryVectorResponse,
+    MemoryWriteRequest,
+    MemoryWriteResponse,
+)
 
 router = APIRouter()
 
@@ -56,4 +61,31 @@ def memory_write_guarded(body: MemoryWriteRequest, db: Session = Depends(get_db)
         )
     except MemoryWriteForbidden as e:
         raise HTTPException(status_code=403, detail=e.code) from e
-    return MemoryWriteResponse(memory_entry_id=row.id, chroma_document_id=row.chroma_document_id)
+    return MemoryWriteResponse(
+        memory_entry_id=row.id,
+        chroma_document_id=row.chroma_document_id,
+        memory_sequence=row.memory_sequence,
+        vector_state=row.vector_state,
+    )
+
+
+@router.post("/retry-vector-index", response_model=MemoryRetryVectorResponse)
+def memory_retry_vector_index(body: MemoryRetryVectorRequest, db: Session = Depends(get_db)) -> MemoryRetryVectorResponse:
+    """Re-attempt Chroma upsert for VECTOR_FAILED / VECTOR_STALE rows (same guards as write)."""
+    try:
+        row = MemoryWriter(db).retry_vector_index_via_guarded_api(
+            directive_id=body.directive_id,
+            task_ledger_id=body.task_id,
+            agent_role=body.agent_role.strip(),
+            workflow_run_nonce=body.workflow_context_marker.strip(),
+            memory_entry_id=body.memory_entry_id,
+        )
+    except MemoryWriteForbidden as e:
+        code = e.code
+        status = 404 if code in ("memory_entry_not_found",) else 403
+        raise HTTPException(status_code=status, detail=code) from e
+    return MemoryRetryVectorResponse(
+        memory_entry_id=row.id,
+        chroma_document_id=row.chroma_document_id,
+        vector_state=row.vector_state,
+    )

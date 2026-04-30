@@ -89,6 +89,8 @@ def test_guarded_memory_write_accepts_matching_nonce(
     assert r.status_code == 200, r.text
     data = r.json()
     assert data["chroma_document_id"]
+    assert data["vector_state"] == "VECTOR_INDEXED"
+    assert int(data["memory_sequence"]) >= 1
 
 
 def test_spine_run_creates_memory_entries(db_session, minimal_project_ids: dict[str, uuid.UUID]) -> None:

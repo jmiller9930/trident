@@ -1,4 +1,4 @@
-"""Scoped memory reads + access audit + optional Chroma retrieval (100D)."""
+"""Scoped memory reads + access audit + optional Chroma retrieval (100D + FIX 004)."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config.settings import Settings, settings as app_settings
-from app.models.audit_event import AuditEvent
+from app.memory.constants import MemoryVectorState
 from app.models.directive import Directive
 from app.models.handoff import Handoff
 from app.models.memory_entry import MemoryEntry
@@ -19,6 +19,17 @@ from app.repositories.audit_repository import AuditRepository
 from app.models.enums import AuditActorType, AuditEventType
 
 from app.memory.vector_service import VectorMemoryService
+
+
+def _memory_order_columns():
+    return (
+        MemoryEntry.memory_sequence.asc(),
+        MemoryEntry.created_at.asc(),
+        MemoryEntry.id.asc(),
+    )
+
+
+_READ_POLICY = {"ordering": "memory_sequence_asc", "structured_authoritative": True}
 
 
 class MemoryReader:
@@ -44,7 +55,7 @@ class MemoryReader:
         q = (
             select(MemoryEntry)
             .where(MemoryEntry.project_id == project_id)
-            .order_by(MemoryEntry.created_at.desc())
+            .order_by(*_memory_order_columns())
             .limit(limit)
         )
         rows = list(self._session.scalars(q).all())
@@ -52,6 +63,7 @@ class MemoryReader:
         return {
             "project_id": str(project_id),
             "directive_count": int(nd),
+            "memory_read_policy": _READ_POLICY,
             "memory_entries": [_entry_summary(r) for r in rows],
         }
 
@@ -75,7 +87,7 @@ class MemoryReader:
             self._session.scalars(
                 select(MemoryEntry)
                 .where(MemoryEntry.directive_id == directive_id)
-                .order_by(MemoryEntry.created_at.desc())
+                .order_by(*_memory_order_columns())
                 .limit(200)
             ).all()
         )
@@ -86,19 +98,78 @@ class MemoryReader:
             self._session.scalars(select(ProofObject).where(ProofObject.directive_id == directive_id).order_by(ProofObject.created_at.desc()).limit(50)).all()
         )
 
-        vector_hits: dict[str, Any] | None = None
+        vector_retrieval: dict[str, Any] | None = None
+        vector_query_hits: dict[str, Any] | None = None
         if vector_query and vector_query.strip():
-            vector_hits = self._vector.query_similar(
+            raw = self._vector.query_similar(
                 vector_query.strip(),
                 project_id=str(d.project_id),
                 directive_id=str(directive_id),
                 top_k=vector_top_k,
             )
+            vector_query_hits = raw
+            idx = MemoryVectorState.VECTOR_INDEXED.value
+            enriched: list[dict[str, Any]] = []
+            ids = raw.get("ids") or []
+            docs = raw.get("documents") or []
+            dists = raw.get("distances") or []
+            trusted_hits = 0
+            for i, doc_id in enumerate(ids):
+                st: str | None = None
+                entry = None
+                try:
+                    uid = uuid.UUID(str(doc_id))
+                    entry = self._session.get(MemoryEntry, uid)
+                except ValueError:
+                    pass
+                if entry is not None:
+                    st = entry.vector_state
+                trusted = st == idx
+                if trusted:
+                    trusted_hits += 1
+                enriched.append(
+                    {
+                        "chroma_id": str(doc_id),
+                        "distance": float(dists[i]) if i < len(dists) else None,
+                        "document_preview": (docs[i] if i < len(docs) else "")[:400],
+                        "memory_entry_vector_state": st,
+                        "vector_hit_trusted": trusted,
+                    }
+                )
+
+            if enriched:
+                if trusted_hits == len(enriched):
+                    freshness = "vector_aligned_all_indexed"
+                    fallback_guidance = "structured_and_vector_consistent_for_returned_hits"
+                elif trusted_hits == 0:
+                    freshness = "vector_untrusted_use_structured_list"
+                    fallback_guidance = (
+                        "Do not rely on semantic ranking; use memory_entries (ordered by memory_sequence) as authoritative."
+                    )
+                else:
+                    freshness = "vector_degraded_mixed_states"
+                    fallback_guidance = (
+                        "Treat only vector_hit_trusted=true hits as semantically grounded; "
+                        "full truth is in memory_entries."
+                    )
+            else:
+                freshness = "vector_empty_use_structured_list"
+                fallback_guidance = "No Chroma hits; use memory_entries."
+
+            vector_retrieval = {
+                "query": vector_query.strip(),
+                "freshness": freshness,
+                "fallback_guidance": fallback_guidance,
+                "trusted_hit_count": trusted_hits,
+                "hit_count": len(enriched),
+                "hits": enriched,
+            }
 
         return {
             "directive_id": str(directive_id),
             "project_id": str(d.project_id),
             "workspace_id": str(d.workspace_id),
+            "memory_read_policy": _READ_POLICY,
             "task_ledger": {
                 "id": str(ledger.id),
                 "current_state": ledger.current_state,
@@ -107,7 +178,8 @@ class MemoryReader:
             "memory_entries": [_entry_summary(r) for r in entries],
             "handoffs": [_handoff_summary(h) for h in handoffs],
             "proof_objects": [_proof_summary(p) for p in proofs],
-            "vector_query_hits": vector_hits,
+            "vector_query_hits": vector_query_hits,
+            "vector_retrieval": vector_retrieval,
         }
 
 
@@ -120,6 +192,9 @@ def _entry_summary(r: MemoryEntry) -> dict[str, Any]:
         "memory_kind": r.memory_kind,
         "title": r.title,
         "body_preview": r.body_text[:500] + ("…" if len(r.body_text) > 500 else ""),
+        "memory_sequence": r.memory_sequence,
+        "vector_state": r.vector_state,
+        "chroma_document_id": r.chroma_document_id,
         "created_at": r.created_at.isoformat(),
     }
 
