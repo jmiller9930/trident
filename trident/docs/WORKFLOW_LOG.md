@@ -620,11 +620,15 @@ Program **ACCEPTED** **100G_FINAL** — subsystem router implementation + clawbo
 
 ### Plan Decision
 
-**PENDING** — await program **ACCEPTED** on this plan **and** explicit resolution of **100H UI vs 100H Agent** document/manifest naming. **No Step 3 Build** until then.
+**ACCEPTED IN PRINCIPLE** — Step 1–2 technical direction stands.
+
+### Build status
+
+**BLOCKED** — **Directive ID conflict:** existing **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100H_UI.md`** (**100H UI**) vs **100H Agent Execution Layer** (issued program scope). **No Step 3 Build** until program renames/renumbers the UI directive (or agent directive) and aligns Manifest / Master Execution Guide.
 
 ### Unlock
 
-After plan ACCEPT + doc reconciliation + build + proof: **100I+** per program.
+**100I+** only after **100H Agent** build completes **post** ID conflict resolution.
 
 ---
 
