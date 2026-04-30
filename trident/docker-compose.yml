@@ -1,7 +1,12 @@
+# Resource limits use Compose-supported `cpus` / `mem_limit` (enforced by Docker Compose v2+).
+# Tune via host sizing; increase chroma/api if embedding workloads OOM.
 services:
   trident-db:
     image: postgres:16-alpine
     container_name: trident-db
+    restart: unless-stopped
+    cpus: 1.5
+    mem_limit: 768m
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-trident}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_local_only}
@@ -19,6 +24,9 @@ services:
   trident-chroma:
     image: chromadb/chroma:0.5.23
     container_name: trident-chroma
+    restart: unless-stopped
+    cpus: 2
+    mem_limit: 3g
     environment:
       ANONYMIZED_TELEMETRY: "false"
     volumes:
@@ -41,6 +49,9 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: trident-api
+    restart: unless-stopped
+    cpus: 2
+    mem_limit: 2g
     ports:
       - "8000:8000"
     environment:
@@ -66,6 +77,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: trident-web
+    restart: unless-stopped
+    cpus: 0.5
+    mem_limit: 256m
     ports:
       - "${TRIDENT_WEB_PORT:-3000}:80"
     environment:
@@ -89,6 +103,9 @@ services:
       context: ./backend
       dockerfile: Dockerfile.worker
     container_name: trident-worker
+    restart: unless-stopped
+    cpus: 1
+    mem_limit: 1g
     environment:
       TRIDENT_ENV: ${TRIDENT_ENV:-development}
       TRIDENT_LOG_LEVEL: ${TRIDENT_LOG_LEVEL:-INFO}
@@ -104,18 +121,21 @@ services:
       trident-db:
         condition: service_healthy
       trident-api:
-        condition: service_started
+        condition: service_healthy
 
   trident-exec:
     build:
       context: ./exec
       dockerfile: Dockerfile
     container_name: trident-exec
+    restart: unless-stopped
+    cpus: 1
+    mem_limit: 512m
     ports:
       - "8010:8010"
     depends_on:
       trident-api:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
       test:
         [

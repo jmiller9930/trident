@@ -5,8 +5,11 @@ from fastapi import FastAPI
 
 from app.api.routes import api_router
 from app.config.settings import Settings, settings
+from app.logging_utils import configure_dependency_log_levels
 
-logging.basicConfig(level=getattr(logging, settings.log_level.upper(), logging.INFO))
+_root_level = getattr(logging, settings.log_level.upper(), logging.INFO)
+logging.basicConfig(level=_root_level)
+configure_dependency_log_levels(_root_level)
 logger = logging.getLogger("trident")
 
 

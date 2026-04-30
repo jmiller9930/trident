@@ -882,7 +882,24 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 
 ### Next
 
-**100U** — Web UI — per manifest after **100J** gate.
+**100L** — Production hardening — per manifest after **100J**; then **100U**.
+
+---
+
+## Directive: **100L** — Production Readiness & Operational Hardening
+
+**Status:** **PASS** — Step 3 Build complete (authoritative proof: commit below)
+
+### Delivered
+
+- **`trident/docker-compose.yml`:** `restart: unless-stopped`; `cpus` / `mem_limit` per service; **trident-worker** / **trident-exec** depend on **trident-api** `service_healthy`.
+- **Logging:** `app/logging_utils.py` — caps **chromadb** / **httpx** / **httpcore** noise when root level is INFO; wired in **API** + **Nike worker**.
+- **`trident/docs/OPERATIONS_RUNBOOK.md`:** env matrix, startup order, restart/recovery, failure matrix, audit SQL sample, **pg_dump** / **pg_restore** outline, notes on **`TRIDENT_BASE_PATH`** health URLs.
+- **Tests:** `pytest` **77 passed** (local).
+
+### Next
+
+**100U** — Web UI — after **100L** acceptance.
 
 ---
 

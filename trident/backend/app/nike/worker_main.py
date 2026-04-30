@@ -8,6 +8,7 @@ import time
 
 from app.config.settings import Settings
 from app.db.session import session_factory_for_settings
+from app.logging_utils import configure_dependency_log_levels
 from app.nike.dispatcher import drain_pending_batch
 
 logger = logging.getLogger("trident.nike.worker")
@@ -15,11 +16,9 @@ logger = logging.getLogger("trident.nike.worker")
 
 def main() -> None:
     cfg = Settings()
-    logging.basicConfig(
-        level=getattr(logging, cfg.log_level.upper(), logging.INFO),
-        stream=sys.stdout,
-        format="%(message)s",
-    )
+    _root = getattr(logging, cfg.log_level.upper(), logging.INFO)
+    logging.basicConfig(level=_root, stream=sys.stdout, format="%(message)s")
+    configure_dependency_log_levels(_root)
     factory = session_factory_for_settings(cfg)
     logger.info(
         "event=nike_worker_start service=trident-worker poll_sec=%s max_attempts=%s",
