@@ -814,6 +814,30 @@ Restart persistence:
 Bypass violations:
 ```
 
+### RUN ORDER — 100I CLAWBOT PROOF
+
+Script: **`trident/backend/clawbot_100i_proof.py`** (API image). Validates **Router** (`POST …/router/route` → **ROUTER_DECISION_MADE**) → **`workflow/run`** → agent/MCP/memory/audit/proof chain + restart verify.
+
+```bash
+ssh jmiller@clawbot.a51.corp
+cd ~/code_projects/trident/trident/trident
+git pull origin main
+docker compose down
+docker compose up -d --build
+docker compose exec trident-api python -m alembic upgrade head
+export TRIDENT_GIT_HEAD=$(git rev-parse HEAD)
+docker compose exec -e TRIDENT_GIT_HEAD="$TRIDENT_GIT_HEAD" trident-api python clawbot_100i_proof.py
+docker compose restart trident-api
+docker compose exec trident-api env TRIDENT_100I_VERIFY_DIRECTIVE_ID='<directive_id_from_script>' python clawbot_100i_proof.py
+docker compose ps
+```
+
+**Required PASS markers (full run):** `Status: PASS`, exit **0**, **`100i_clawbot_proof_ok=1`**, **`ROUTER_DECISION_MADE_present=True`**, **`MCP_no_bypass_guard: PASS`**, **`Directive_final_status: COMPLETE`**, **`Ledger_final_state: CLOSED`**, **`EXECUTION_LOG`** UUID printed.
+
+**Verify run:** **`restart_verify_PASS=1`**, **`100i_clawbot_proof_verify_ok=1`**, exit **0**.
+
+API prefix: when deployed behind **`/trident`**, ensure **`TRIDENT_BASE_PATH=/trident`** on **`trident-api`** so in-container HTTP calls hit **`/trident/api/v1/...`**.
+
 ---
 
 END
