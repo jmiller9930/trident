@@ -1,7 +1,8 @@
 100A — proof capture notes (engineering)
 
-- pytest: PASS (6 tests) — run: cd backend && python -m pytest
+- pytest: PASS — run: cd backend && python -m pytest (includes base-path /trident tests)
 - docker compose config: PASS (syntax validation)
 - docker compose build/up/ps/curl/restart: NOT RUN — Docker daemon unavailable in CI/agent environment; run locally per README.
+- Deployment target: clawbot.a51.corp `/trident` — see docs/DEPLOYMENT_CLAWBOT.md and TRIDENT_BASE_PATH / TRIDENT_PUBLIC_BASE_URL
 
-Documentation cleanup: Foundation v1.1 tracked in docs/DOCUMENTATION_CLEANUP_LOG.md
+Documentation cleanup: docs/DOCUMENTATION_CLEANUP_LOG.md

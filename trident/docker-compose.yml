@@ -48,17 +48,13 @@ services:
       TRIDENT_DB_PORT: "5432"
       TRIDENT_VECTOR_HOST: trident-vector
       TRIDENT_VECTOR_PORT: "8001"
+      TRIDENT_BASE_PATH: ${TRIDENT_BASE_PATH:-}
+      TRIDENT_PUBLIC_BASE_URL: ${TRIDENT_PUBLIC_BASE_URL:-}
     depends_on:
       trident-db:
         condition: service_healthy
       trident-vector:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/api/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
 
   trident-web:
     build:
@@ -67,6 +63,9 @@ services:
     container_name: trident-web
     ports:
       - "${TRIDENT_WEB_PORT:-3000}:80"
+    environment:
+      TRIDENT_BASE_PATH: ${TRIDENT_BASE_PATH:-}
+      TRIDENT_PUBLIC_BASE_URL: ${TRIDENT_PUBLIC_BASE_URL:-http://localhost:8000}
     depends_on:
       trident-api:
         condition: service_healthy
