@@ -859,4 +859,31 @@ API prefix: when deployed behind **`/trident`**, ensure **`TRIDENT_BASE_PATH=/tr
 
 ---
 
+## Directive: **100J_FINAL** — Deployment + Production Validation
+
+**Status:** **PASS** — **ACCEPTED** (clawbot Step 3 executed)
+
+### Proof summary (2026-04-30 clawbot)
+
+- **Git HEAD (host pull):** **`3c31e6c`**
+- **Compose:** `docker compose down` → `build --no-cache` → `up -d`; final **`docker compose ps`** — core services **healthy** (api, db, chroma, web, exec; worker up).
+- **Alembic:** **`100e001 (head)`** after deploy.
+- **Persistence:** **`audit_events` = 215**, **`memory_entries` = 25** before full-stack down; **unchanged** after `up` (Postgres volume intact).
+- **100I re-validation (post-deploy):** **`Status: PASS`**, **`100i_clawbot_proof_ok=1`**; after **`docker compose restart trident-api`**: **`restart_verify_PASS=1`**, **`100i_clawbot_proof_verify_ok=1`**, verify directive **`31e10b91-d605-4d8f-a19c-97c0db3a2366`**, **`EXECUTION_LOG`:** **`d84af3d4-8f01-49b8-a98a-9e9b2c7bab8e`**.
+- **Security / enforcement:** Matches **100I** acceptance (MCP guard, audit chain, routing/workflow proofs); log tail reviewed — **Chroma telemetry** noise only (no secrets flagged).
+
+### Known issue (probe documentation)
+
+Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL** (404 in logs) because **`trident-api`** is mounted with **`TRIDENT_BASE_PATH=/trident`** — correct paths are **`/trident/api/health`** (etc.). Docker **healthy** status and in-process checks use the prefixed routes.
+
+### Out of scope (per issued constraints)
+
+**Backup/restore**, **performance**, **UI validation** — not executed this pass (**N/A**).
+
+### Next
+
+**100U** — Web UI — per manifest after **100J** gate.
+
+---
+
 END
