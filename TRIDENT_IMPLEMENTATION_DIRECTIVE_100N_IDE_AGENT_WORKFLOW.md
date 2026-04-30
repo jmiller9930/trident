@@ -21,7 +21,7 @@ Covers:
 - Memory-aware responses
 - Patch workflow integration (100M)
 - MCP request surfacing (100F)
-- Router visibility (100G)
+- Subsystem router visibility (**100G**)
 
 ---
 

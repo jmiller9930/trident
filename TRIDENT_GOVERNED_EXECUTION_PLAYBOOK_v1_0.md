@@ -150,7 +150,7 @@ REJECTED → fix and resubmit
 
 ### Fix directives
 
-Apply **only** at injection points defined in **`TRIDENT_MASTER_EXECUTION_GUIDE_v1_0.md`** (§5):
+Apply **only** at injection points defined in **`TRIDENT_MASTER_EXECUTION_GUIDE_v1_1.md`** (§5) — **v1.1 is authoritative** for fix gates:
 
 | Fix   | Placement (summary)                          |
 |-------|-----------------------------------------------|
@@ -158,7 +158,7 @@ Apply **only** at injection points defined in **`TRIDENT_MASTER_EXECUTION_GUIDE_
 | FIX 002 | Before **100I** / **100J**                  |
 | FIX 003 | Before **100M** / **100N**                  |
 | FIX 004 | Before **100G** / **100I**                  |
-| FIX 005 | After **100G** (before production external API reliance) |
+| FIX 005 | After **100R** (before production **external LLM API** reliance) |
 
 Exact “complete after / before” gates live in the Master Execution Guide.
 

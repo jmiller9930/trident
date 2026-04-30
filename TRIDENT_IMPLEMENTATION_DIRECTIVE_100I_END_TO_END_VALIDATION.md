@@ -40,7 +40,7 @@ Each stage must:
 - Read/write memory (100D)
 - Respect Git + locks (100E)
 - Route through MCP for execution (100F)
-- Use router decisions (100G)
+- Use **subsystem** router decisions (**100G**)
 - Reflect in UI (100H)
 
 ---

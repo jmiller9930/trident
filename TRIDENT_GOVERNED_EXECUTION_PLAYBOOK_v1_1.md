@@ -161,7 +161,7 @@ Apply **only** at injection points defined in **`TRIDENT_MASTER_EXECUTION_GUIDE_
 | FIX 002 | Before **100I** / **100J**                  |
 | FIX 003 | Before **100M** / **100N**                  |
 | FIX 004 | Before **100G** / **100I**                  |
-| FIX 005 | After **100G** (before production external API reliance) |
+| FIX 005 | After **100R** / Model Router (before production **external LLM API** reliance) |
 
 Exact “complete after / before” gates live in the Master Execution Guide.
 

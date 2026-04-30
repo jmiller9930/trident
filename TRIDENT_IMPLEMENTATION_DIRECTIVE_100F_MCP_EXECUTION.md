@@ -162,7 +162,7 @@ Engineering must NOT:
 
 Parent: Trident Manifest v1.0  
 Depends on: 100E  
-Unlocks: 100G — Router Implementation
+Unlocks: **100G** — Subsystem / Work Request Router (`TRIDENT_IMPLEMENTATION_DIRECTIVE_100G_ROUTER.md`)
 
 ---
 

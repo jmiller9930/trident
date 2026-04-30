@@ -1,159 +1,197 @@
 # TRIDENT IMPLEMENTATION DIRECTIVE 100G
-## Router Implementation (Local-First + External Escalation)
+## Subsystem Router / Work Request Router
+
+```yaml
+manifest_id: TRIDENT-MANIFEST-v1.0
+project: Project Trident
+parent_document: TRIDENT_DOCUMENT_MANIFEST_v1_0.md
+document_id: TRIDENT-IMPLEMENTATION-DIRECTIVE-100G
+document_type: Directive
+sequence: 100G
+status: Issued
+dependencies:
+  - TRIDENT_IMPLEMENTATION_DIRECTIVE_100F_MCP_EXECUTION.md
+  - TRIDENT_DIRECTIVE_000P_NIKE_EVENT_ORCHESTRATOR.md
+  - TRIDENT_DIRECTIVE_000B_TASK_LEDGER_AND_LANGGRAPH_STATE_MACHINE.md
+produces:
+  - Subsystem routing decisions (MCP, LANGGRAPH, NIKE, MEMORY read)
+langgraph_required: true
+```
+
+---
+
+## 0. What this directive is **not**
+
+This **100G** implementation directive defines **only** the **Subsystem / Work Request Router**:
+
+- **No** LLM routing, **no** model selection, **no** external API escalation (those belong to **000G** + **100R** — Model Router).
+- **No** command execution ( **MCP executes** ).
+- **No** MCP **risk** classification (risk tiers live in **100F** MCP layer).
+- **No** memory **writes** (memory informs via **read** routing only; writes stay graph/MCP-governed).
+- **No** subprocess / shell / file mutation.
+
+Confusion cleared: former Markdown in this filename that described **local/external LLM routing** has been moved to **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100R_MODEL_ROUTER_LOCAL_FIRST.md`**.
 
 ---
 
 ## 1. Purpose
 
-Implement the routing system that determines whether tasks are executed using the local LLM or escalated to an external API, enforcing strict local-first policy and token optimization.
+Introduce a **central routing layer** that determines:
+
+- where work goes  
+- which subsystem handles it  
+- how execution paths are selected  
+
+This layer **decides**; it does **not** execute.
 
 ---
 
-## 2. Scope
+## 2. Orchestration rule
 
-Covers:
-- Routing decision engine
-- Local model adapter integration
-- External model adapter (stub or controlled call)
-- Escalation logic
-- Token optimization preprocessor
-- Logging and observability
+```text
+Router decides.
+MCP executes.
+LangGraph governs.
+Nike coordinates.
+Locks enforce.
+Memory informs.
+```
 
----
-
-## 3. Core Principle
-
-> Local LLM is always attempted first.  
-> External LLM is used only when necessary and must be justified.
+**No overlap:** the subsystem router returns a **decision object** and audit record only; callers invoke the appropriate subsystem entrypoints.
 
 ---
 
-## 4. Required Components
+## 3. Responsibilities
+
+The router must:
+
+- receive a structured work request  
+- **classify intent** for **subsystem routing** (not operational risk — MCP owns risk)  
+- route to exactly one of:
+  - **LangGraph** workflow path  
+  - **MCP** execution path  
+  - **Nike** event path  
+  - **Memory** read path  
+- produce a routing decision object  
+- log the decision (**ROUTER_DECISION_MADE**)
+
+---
+
+## 4. Non-responsibilities (hard rules)
+
+The subsystem router must **NOT**:
+
+- execute commands  
+- call subprocess / shell  
+- bypass MCP for execution intent  
+- modify files  
+- perform memory writes  
+- run workflows internally (may only reference **LangGraph entrypoints**, not embed graph execution)  
+- perform MCP-style **risk** classification  
+
+Ambiguity **fails closed** (`validated: false`, no safe route).
+
+---
+
+## 5. Required modules
 
 ```text
 backend/app/router/
   router_service.py
-  router_policy.py
+  router_classifier.py
+  router_validator.py
   router_logger.py
-  token_optimizer.py
-  model_adapters/
-    local_adapter.py
-    external_adapter.py
 ```
+
+(`router` here means **subsystem router** only.)
 
 ---
 
-## 5. Routing Flow
+## 6. Input contract
 
 ```text
-LangGraph Node → Router → Attempt LOCAL
-IF insufficient → Evaluate → Escalate to EXTERNAL
+directive_id
+task_id
+agent_role
+intent
+payload        # optional structured JSON
 ```
 
 ---
 
-## 6. Local Model Behavior
-
-- Must handle:
-  - coding prompts
-  - file-aware reasoning
-  - simple analysis
-
-- Must return:
-  - response
-  - confidence score (required)
-
----
-
-## 7. Escalation Conditions
-
-Escalation occurs if:
-
-- confidence below threshold
-- response incomplete
-- task flagged as high reasoning
-- directive explicitly requires external validation
-
----
-
-## 8. Token Optimization
-
-Before external call:
-
-System must:
-- trim prompt
-- remove irrelevant context
-- summarize memory
-- reduce file scope
-
----
-
-## 9. Logging Requirements
-
-Each routing decision must log:
+## 7. Output contract
 
 ```json
 {
-  "task_id": "T-123",
-  "decision": "LOCAL | EXTERNAL",
-  "reason": "low_confidence | complex_reasoning | directive_flag",
-  "local_model": "model_name",
-  "external_model": "model_name"
+  "route": "MCP | LANGGRAPH | NIKE | MEMORY",
+  "reason": "...",
+  "next_action": "...",
+  "validated": true
 }
 ```
 
----
-
-## 10. Execution Rules
-
-- Router must run inside LangGraph node
-- Router must not trigger MCP directly
-- Router must not bypass memory system
-- Router must not silently escalate
+`next_action` describes the **recommended** API entry or operation id for the caller — **not** an executed side effect.
 
 ---
 
-## 11. Hard Constraints
+## 8. Decision boundaries
 
-Engineering must NOT:
-- default to external model
-- bypass logging
-- send full context blindly to external API
-- expose sensitive data in prompts
-
----
-
-## 12. Required Tests
-
-- local-first routing test
-- escalation trigger test
-- token optimization test
-- logging validation test
+- **Execution intent → MCP**  
+- **Workflow progression → LANGGRAPH**  
+- **Event propagation → NIKE**  
+- **Read-only knowledge → MEMORY**
 
 ---
 
-## 13. Proof Objects Required
+## 9. Logging
 
-- routing logs
-- escalation examples
-- token-reduced prompt samples
+Every routing decision must emit audit event:
 
----
+```text
+ROUTER_DECISION_MADE
+```
 
-## 14. Acceptance Criteria
-
-- local-first policy enforced
-- escalation justified
-- token optimization applied
-- decisions logged and visible
+with full reasoning payload (intent, route, reason, ids — no secrets).
 
 ---
 
-## 15. Manifest Link
+## 10. Tests
+
+- correct routing by intent  
+- invalid input rejection  
+- no execution side-effects  
+- no bypass paths  
+
+---
+
+## 11. Proof
+
+Must show:
+
+- routing decisions for all four routes  
+- audit logs (**ROUTER_DECISION_MADE**)  
+- no execution performed  
+- no unauthorized state mutation  
+
+---
+
+## 12. Governed execution
+
+1. **Step 1 — Read**  
+2. **Step 2 — Plan** (required before build)  
+3. **Step 3 — Build** only after plan acceptance  
+
+Documentation conflict against legacy LLM **100G** text is **resolved** via **100R** relocation (see **DOC_100G_CONFLICT_RESOLUTION** in **`WORKFLOW_LOG.md`**).
+
+---
+
+## 13. Manifest Link
 
 Parent: Trident Manifest v1.0  
-Depends on: 100F  
-Unlocks: 100H — UI Implementation
+Depends on: **100F**  
+Unlocks: **100H** — UI Implementation  
+
+**Related (deferred):** **100R** — Model Router / local-first external escalation (**000G**).
 
 ---
 

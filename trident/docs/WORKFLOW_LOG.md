@@ -487,7 +487,33 @@ Local engineering host may lack Docker/SSH to clawbot; final sign-off is on **cl
 
 ### Gate Decision
 
-Program **ACCEPTED** **100F_FINAL** as **PASS** (clawbot evidence recorded above). **100F** is formally closed. **100G** (Router) remains **blocked** until the program issues that gate explicitly.
+Program **ACCEPTED** **100F_FINAL** as **PASS** (clawbot evidence recorded above). **100F** is formally closed. **100G** subsystem-router **implementation** remains blocked until doc conflict resolution is **ACCEPTED** and plan gate clears (see **DOC_100G_CONFLICT_RESOLUTION** below).
+
+---
+
+## Directive: DOC_100G_CONFLICT_RESOLUTION
+
+**Status:** PASS (documentation delivered — program acceptance on file set optional)
+
+### Plan
+
+Separate **subsystem work-request router (100G)** from **model router / LLM escalation (100R)**; relocate legacy LLM **100G** text to **100R**; refresh Manifest + Master Execution Guide + Playbook + **000G** + FIX **005** references.
+
+### Plan Decision
+
+**Engineering complete** — awaiting explicit program **ACCEPTED** if required by governance.
+
+### Files Changed
+
+See git commit; includes new **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100R_MODEL_ROUTER_LOCAL_FIRST.md`**, rewritten **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100G_ROUTER.md`**, **`TRIDENT_DOCUMENT_MANIFEST_v1_0.md`**, **`TRIDENT_MASTER_EXECUTION_GUIDE_v1_1.md`** / **v1_0**, Playbooks **v1_0**/**v1_1**, **`TRIDENT_DIRECTIVE_000G_ROUTER_POLICY.md`**, **FIX 005**, cross-references in **100F**/**100H**/**100I**/**100N**.
+
+### Gate Decision
+
+**PASS** (doc-only) — conflict explicitly documented; **100G build** still blocked until plan acceptance for implementation (unchanged enforcement).
+
+### Known Gaps
+
+**100R** schedule is program-defined; **v1_0** Master Guide omits **100O** ordering detail — **v1.1** remains authoritative.
 
 ---
 
@@ -500,7 +526,7 @@ Program **ACCEPTED** **100F_FINAL** as **PASS** (clawbot evidence recorded above
 - **Issued:** program message — control/orchestration router; **decides only**; no execution, subprocess, MCP bypass, file or memory writes, no direct workflow runs, no risk classification.
 - **Depends on:** **100F** (closed / ACCEPTED).
 - **Code today:** no `app/router/` package. `AuditEventType.ROUTER_DECISION` exists in `enums.py` but is **not emitted** anywhere. Subsystem **entrypoints** already exist: LangGraph `POST /v1/directives/{id}/workflow/run`; MCP `POST /v1/mcp/classify|execute`; Nike `POST/GET /v1/nike/events...`; memory read `GET /v1/memory/directive/{id}` (and project scope).
-- **Document conflict:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100G_ROUTER.md` still describes **local-first LLM / external escalation** (model adapters, token optimizer). That is **not** the same as the **issued 100G** (subsystem routing). Build plan will follow **issued 100G**; implementation doc may need program rename/supersession later.
+- **Document conflict:** **Resolved** under **`DOC_100G_CONFLICT_RESOLUTION`** — LLM routing moved to **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100R_MODEL_ROUTER_LOCAL_FIRST.md`**; **100G** file rewritten as subsystem router.
 
 ### Plan (Step 2 — Plan, pre-build)
 

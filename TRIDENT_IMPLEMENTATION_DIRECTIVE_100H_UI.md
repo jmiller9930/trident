@@ -160,7 +160,7 @@ Engineering must NOT:
 ## 14. Manifest Link
 
 Parent: Trident Manifest v1.0  
-Depends on: 100G  
+Depends on: **100G** (Subsystem / work-request router)  
 Unlocks: 100I — End-to-End System Validation
 
 ---

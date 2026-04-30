@@ -94,8 +94,10 @@ Engineering must return:
 ## 9. Manifest Link
 
 Parent: Trident Manifest v1.0  
-Depends on: 000G, 100G  
-Must be completed before: production external API use
+Depends on: **000G**, **100R** (Model Router implementation)  
+Must be completed before: production **external LLM API** use  
+
+**Note:** **100G** is the **subsystem** router and is **out of scope** for this fix; confidence calibration applies to **model** routing only.
 
 ---
 

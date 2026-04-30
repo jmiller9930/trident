@@ -56,7 +56,7 @@ Implementation Directive (e.g., 100A) → Master Execution Guide → Governed Ex
 
 ## 1. System Overview
 
-Trident is a **memory-first, local-first control plane** for multi-agent software delivery. A **FastAPI (or equivalent) backend**, **worker**, **execution/MCP service**, **data and vector stores**, and **web UI** implement a single spine: **LangGraph** owns workflow and state transitions; **MCP** is the only governed execution and tool surface; **Git + file locks** gate every mutation; **shared memory + task ledger** hold durable truth; a **router** applies local-first model policy with explicit escalation; **proof and audit** close work.
+Trident is a **memory-first, local-first control plane** for multi-agent software delivery. A **FastAPI (or equivalent) backend**, **worker**, **execution/MCP service**, **data and vector stores**, and **web UI** implement a single spine: **LangGraph** owns workflow and state transitions; **MCP** is the only governed execution and tool surface; **Git + file locks** gate every mutation; **shared memory + task ledger** hold durable truth; a **subsystem router (100G)** selects among MCP / LangGraph / Nike / memory-read paths (**decision only**); a **model router (100R**, deferred, LLD **000G**) handles **LLM** local-vs-external escalation separately; **proof and audit** close work.
 
 ### Backend as work-processing authority (IDE / Web → spine)
 
@@ -65,7 +65,7 @@ The **backend** is the **work-processing authority**. The **IDE** is a Cursor-st
 **Canonical processing chain (product runtime):**
 
 ```text
-IDE / Web → Trident API → Nike → LangGraph → Agents / Memory / Router / MCP / Proof (+ Git/Lock governance)
+IDE / Web → Trident API → Nike → LangGraph → Agents / Memory / SubsystemRouter (100G) / MCP / Proof (+ Git/Lock governance); ModelRouter (100R) is separate per **000G**
 ```
 
 **Future backend-managed agent roles** (hooks; not required to be fully implemented before Nike — Nike/event routing must admit them **without redesign**): **Engineer agent**, **Reviewer agent**, **Documentation agent**, **Debugger agent**, **Test agent**, **Security review agent**, **Performance review agent**, **Deployment/release agent**. These map to graph nodes and/or event-driven handlers **server-side** only; Nike routes events toward LangGraph and subsystems per **000P** — never as IDE-local orchestration.
@@ -92,6 +92,8 @@ START HERE
 Phase 1 — Core platform:
 100A → 100B → 100C → 100O → 100D → 100E → 100F → 100G → 100H → 100I → 100J
 
+**Deferred (program-scheduled):** **100R** — Model Router / local-first external escalation (**000G**). Runs **after** **100G** (subsystem router) is accepted; typically before production reliance on external LLM APIs. See **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100R_MODEL_ROUTER_LOCAL_FIRST.md`**.
+
 Phase 2 — IDE (after Phase 1 prerequisites; see §4):
 100K → 100L → 100M → 100N
 ```
@@ -113,8 +115,9 @@ Each row lists **prior implementation steps**, **design directives (LLD)** that 
 | **100D** Memory system | **100O** | **000C** | Nike routing available per **000P**; graph runs |
 | **100E** Git + file lock | 100D | **000E** | Memory APIs stable for audit/events |
 | **100F** MCP execution | 100E | **000F** | Locks + repo governance operational |
-| **100G** Router | 100F | **000G** | MCP receipts + execution path proven |
-| **100H** UI | 100G | **000H** | Router decisions observable server-side |
+| **100G** Subsystem / work-request Router | 100F | **000B**, **000P** (and refs in **100G** directive) — **not** LLD **000G** | MCP receipts + execution path proven; subsystem routing auth |
+| **100R** Model Router (deferred) | **100G** | **000G** | Subsystem router decisions observable; **100R** implements LLM routing |
+| **100H** UI | 100G | **000H** | Subsystem router decisions observable server-side |
 | **100I** End-to-end validation | 100H | **000I** | UI reflects backend truth (no mock-as-proof) |
 | **100J** Deployment + production validation | 100I | **000J**, **000M** | Full lifecycle test path exists |
 | **100K** IDE bootstrap | **100H** | **000O** | Web control plane usable; API stable for IDE |
@@ -152,7 +155,7 @@ Apply **FIX 001–005** at the following gates. Details remain in each fix docum
 | Fix | Complete after | Complete before | Notes |
 |-----|----------------|-----------------|--------|
 | **FIX 004** — Memory consistency / transaction model | **100D** | **100G**, **100I** | Aligns structured + vector + ledger semantics before router and full integration rely on retrieval. |
-| **FIX 005** — Router confidence + escalation guard | **100G** | Relying on **production external API** routing | Depends on **000G** + router implementation. |
+| **FIX 005** — Router confidence + escalation guard | **100R** (Model Router) | Relying on **production external LLM API** routing | Depends on **000G** + **100R**; targets **model** router, not **100G** subsystem router. |
 | **FIX 002** — Git commit governance | **100E** | **100I**, **100J** | Needs Git/file-lock implementation; finish before E2E and deploy validation that assume drift detection. |
 | **FIX 001** — IDE write gate | **100K**, **100L** | **100M**, **100N** | Governed IDE edits before patch/agent workflows. |
 | **FIX 003** — Lock heartbeat + expiry | **100L** (with **100E** foundation) | **100M**, **100N** | Stale-lock behavior before patch/apply and IDE agent flows. |
@@ -162,11 +165,12 @@ Apply **FIX 001–005** at the following gates. Details remain in each fix docum
 ```text
 100A → 100B → 100C → 100O → 100D
   → FIX 004
-  → 100E → 100F → 100G
-  → FIX 005 (before prod external routing)
+  → 100E → 100F → 100G (subsystem router)
   → 100H
   → FIX 002 (must complete before 100I)
   → 100I → 100J
+  → 100R (when scheduled — Model Router)
+  → FIX 005 (before prod external LLM routing)
 
 100K → 100L
   → FIX 001
@@ -219,7 +223,8 @@ Abbreviated summary only; **acceptance and proof follow the implementation direc
 | **100D** | Read/write APIs + scoped retrieval | Persistence across restart | Locks/Git meaningless |
 | **100E** | Acquire/release lock; repo state captured | Conflict + audit logs | MCP/file ops unsafe |
 | **100F** | MCP-only execution path; approvals | Receipts in ledger/memory | Router/UI disconnected |
-| **100G** | Local-first routing + logged escalation | Decision logs | UI lies about routing |
+| **100G** | Subsystem routing (MCP/LG/Nike/memory read) + **ROUTER_DECISION_MADE** logs | Decision logs | UI lies about routing |
+| **100R** | Local-first **LLM** routing + logged escalation | Model decision logs | External LLM misuse |
 | **100H** | Panels bind to real APIs | No mock backend state | **100I** blocked |
 | **100I** | E2E lifecycle + failure tests | Full audit trail | **100J** blocked |
 | **100J** | Deploy checklist + prod validation | Install/backup/health proof | Production approval |
@@ -245,7 +250,7 @@ Abbreviated summary only; **acceptance and proof follow the implementation direc
 2. Build skeleton per **100A** until directive acceptance; checkpoint.  
 3. Follow **100B → 100C → 100O → 100D** using each directive’s acceptance criteria (**100O** implementation directive issued; see filename under §3.1).  
 4. After **100D** passes, open **FIX 004**; implement and prove before **100G**.  
-5. Continue **100E → 100F → 100G**; implement **FIX 005** before treating external APIs as production-ready.  
+5. Continue **100E → 100F → 100G** (subsystem router); complete **100H → 100I → 100J** as needed; schedule **100R** then **FIX 005** before treating **external LLM** APIs as production-ready.  
 6. Complete **100H**; implement **FIX 002** before **100I**.  
 7. Run **100I → 100J**; then **100K → 100L**; apply **FIX 001** and **FIX 003**; finish **100M → 100N**.
 

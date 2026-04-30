@@ -52,8 +52,10 @@ The system is governed by these non-negotiable principles:
 12. **The backend is the work-processing authority.** The IDE is a Cursor-style frontend/editor surface; the web UI is a control-plane frontend. **Agent workflows** must run through **backend-governed** services — **not** as independent IDE-side execution. Canonical processing chain:
 
     ```text
-    IDE / Web → API → Nike → LangGraph → Agents / Memory / Router / MCP / Proof
+    IDE / Web → API → Nike → LangGraph → Agents / Memory / SubsystemRouter (100G) / MCP / Proof
     ```
+
+    *(**Subsystem Router** = **100G** — MCP / LangGraph / Nike / memory-read routing only. **Model Router** = **100R** governed by LLD **000G** — LLM local/external escalation; separate directive.)*
 
     Git and file-lock governance applies on governed mutation paths; it does not replace this chain.
 
@@ -124,10 +126,10 @@ The system is governed by these non-negotiable principles:
 **Purpose:** MCP execution layer: SSH, shell, vCenter, Docker, command classification, approval gates, execution receipts, safety policies.
 
 #### TRIDENT-DIRECTIVE-000G
-**File:** Pending  
+**File:** `TRIDENT_DIRECTIVE_000G_ROUTER_POLICY.md`  
 **Type:** LLD Directive  
-**Status:** Planned  
-**Purpose:** Router and model policy: local-first model routing, external API fallback, cost awareness, escalation rules, model selection, traceability.
+**Status:** Issued (policy); implementation deferred to **100R**  
+**Purpose:** **Model-router** policy only: local-first LLM routing, external API fallback, cost awareness, escalation rules, model selection, traceability. **Does not** define **100G** subsystem/work-request routing (see **100G** implementation directive).
 
 #### TRIDENT-DIRECTIVE-000H
 **File:** Pending  
@@ -148,6 +150,21 @@ The system is governed by these non-negotiable principles:
 **Type:** Implementation Directive  
 **Status:** Issued  
 **Purpose:** Implement Nike per **000P** (worker dispatcher, ingest API, persistence, LangGraph wakeup boundary). Sequenced after **100C**, before **100D**. Must preserve backend agent-hook extensibility per principles 12–13.
+
+#### TRIDENT-IMPLEMENTATION-DIRECTIVE-100G
+**File:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100G_ROUTER.md`  
+**Type:** Implementation Directive  
+**Status:** Issued  
+**Purpose:** **Subsystem / work-request router** — routes intent to **MCP**, **LANGGRAPH**, **NIKE**, or **MEMORY** (read). Pure decision layer; **no** LLM selection, **no** execution, **no** MCP risk classification.  
+**Depends on:** **100F**  
+**Unlocks:** **100H**
+
+#### TRIDENT-IMPLEMENTATION-DIRECTIVE-100R
+**File:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100R_MODEL_ROUTER_LOCAL_FIRST.md`  
+**Type:** Implementation Directive  
+**Status:** Issued — **Deferred** (program-scheduled after **100G**)  
+**Purpose:** **Model router** — local-first LLM vs external API escalation per **000G**. Former content incorrectly filed as **100G**; relocated here.  
+**Depends on:** **100G**, **100F**, **000G**
 
 ---
 

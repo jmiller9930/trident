@@ -4,6 +4,14 @@
 
 ------------------------------------------------------------------------
 
+## 0. Layering: subsystem router vs model router
+
+- **100G** (`TRIDENT_IMPLEMENTATION_DIRECTIVE_100G_ROUTER.md`): **Subsystem / work-request router** — chooses among **MCP**, **LangGraph**, **Nike**, and **memory read** paths. **No** LLM selection, **no** model escalation.
+- **100R** (`TRIDENT_IMPLEMENTATION_DIRECTIVE_100R_MODEL_ROUTER_LOCAL_FIRST.md`): **Model router** — local-first LLM vs external API; **this LLD (000G)** governs **100R** only.
+- Do **not** use **000G** to scope **100G** subsystem-router implementation.
+
+------------------------------------------------------------------------
+
 ## 1. Purpose
 
 Define the routing system responsible for selecting between local LLM
