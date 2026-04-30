@@ -117,6 +117,21 @@ def _ordered_audit_types(session: Session, directive_id: uuid.UUID) -> list[str]
     return [r.event_type for r in rows]
 
 
+def _every_mcp_completed_follows_agent_mcp_request(types: list[str]) -> tuple[bool, str]:
+    """No MCP_EXECUTION_COMPLETED without an AGENT_MCP_REQUEST since the prior COMPLETED (runtime bypass guard)."""
+    agent_req = AuditEventType.AGENT_MCP_REQUEST.value
+    mcp_done = AuditEventType.MCP_EXECUTION_COMPLETED.value
+    last_complete_idx = -1
+    for i, t in enumerate(types):
+        if t != mcp_done:
+            continue
+        window = types[last_complete_idx + 1 : i]
+        if agent_req not in window:
+            return False, f"mcp_completed_without_agent_mcp_request_window@idx_{i}"
+        last_complete_idx = i
+    return True, "ok"
+
+
 def _find_agent_chain(types: list[str]) -> bool:
     want = (
         AuditEventType.AGENT_INVOCATION.value,
@@ -170,6 +185,10 @@ def _validate_db(session: Session, directive_id: uuid.UUID) -> tuple[bool, str]:
     if not _find_agent_chain(types):
         return False, "audit_chain_missing_required_subsequence"
 
+    bypass_ok, bypass_reason = _every_mcp_completed_follows_agent_mcp_request(types)
+    if not bypass_ok:
+        return False, bypass_reason
+
     mem = _agent_memory_row(session, directive_id)
     if mem is None:
         return False, "agent_engineer_memory_row_missing"
@@ -217,6 +236,8 @@ def main() -> int:
             _print_kv("Directive_ID", str(did))
             _print_kv("Audit_chain_proof", "PASS" if ok else f"FAIL:{reason}")
             types = _ordered_audit_types(session, did)
+            bypass_ok, bypass_reason = _every_mcp_completed_follows_agent_mcp_request(types)
+            _print_kv("MCP_no_bypass_guard", "PASS" if bypass_ok else f"FAIL:{bypass_reason}")
             _print_kv("Audit_event_types_count", len(types))
             mem = _agent_memory_row(session, did)
             if mem:
@@ -256,6 +277,8 @@ def main() -> int:
     with SessionLocal() as session:
         ok, reason = _validate_db(session, did)
         types = _ordered_audit_types(session, did)
+        bypass_ok, bypass_reason = _every_mcp_completed_follows_agent_mcp_request(types)
+        _print_kv("MCP_no_bypass_guard", "PASS" if bypass_ok else f"FAIL:{bypass_reason}")
         _print_kv("Audit_chain_ordered_event_count", len(types))
         _print_kv("Audit_chain_proof", "PASS" if ok else f"FAIL:{reason}")
 

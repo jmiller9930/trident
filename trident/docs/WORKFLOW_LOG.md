@@ -698,7 +698,7 @@ docker compose exec trident-api env TRIDENT_100H_VERIFY_DIRECTIVE_ID='<directive
 docker compose ps
 ```
 
-Script: **`trident/backend/clawbot_100h_proof.py`** (copied into **`trident-api`** image). Prints **`100h_clawbot_proof_ok=1`** and **`Status: PASS`** when DB audit subsequence + MCP **`EXECUTION_LOG`** proof + **`agent:engineer`** memory row + closed ledger hold.
+Script: **`trident/backend/clawbot_100h_proof.py`** (copied into **`trident-api`** image). Prints **`100h_clawbot_proof_ok=1`** and **`Status: PASS`** when DB audit subsequence + MCP **`EXECUTION_LOG`** proof + **`agent:engineer`** memory row + closed ledger hold + **`MCP_no_bypass_guard`** (**every `MCP_EXECUTION_COMPLETED` must have `AGENT_MCP_REQUEST` in the audit window since the prior completion**).
 
 ### Return template (paste back to program)
 
