@@ -12,6 +12,84 @@
 
 ------------------------------------------------------------------------
 
+## 0a. Model cadre (policy — implementation: **100R** only)
+
+Trident must support a configurable **model cadre**. The system must **not** assume every agent uses the same LLM.
+
+**Supported modes:**
+
+```text
+SINGLE_MODEL_MODE:
+  all agents use the same configured local model
+
+CADRE_MODE:
+  each agent role may have its own assigned model profile
+```
+
+**Required conceptual mapping (profiles, not locked vendor strings):**
+
+```text
+Architect → reasoning model
+Engineer → coding model
+Reviewer → validation / review model
+Debugger → diagnostic / code-fix model
+Docs → documentation / summarization model
+```
+
+**Hardware planning target (initial):**
+
+```text
+GPU class: RTX 6000-class, 32GB VRAM
+Runtime: local-first
+External OpenAI/API: fallback only — not the default execution path
+```
+
+**Provisional local / fallback candidates (non-binding until 100R benchmarks validate):**
+
+```text
+Architect:
+  local_profile: reasoning
+  candidate_models:
+    - qwen3 reasoning-class 14B/32B quantized
+    - deepseek-style reasoning model if compatible
+  external_fallback: OpenAI reasoning-class model
+
+Engineer:
+  local_profile: coding
+  candidate_models:
+    - qwen3-coder-next
+    - qwen coder-family quantized model
+  external_fallback: OpenAI coding-capable model
+
+Reviewer:
+  local_profile: validation
+  candidate_models:
+    - qwen3 reasoning-class model
+    - deepseek-style reviewer/reasoning model
+  external_fallback: OpenAI reasoning/review model
+
+Debugger:
+  local_profile: diagnostic
+  candidate_models:
+    - qwen3-coder-next
+    - qwen coder-family quantized model
+  external_fallback: OpenAI coding-capable model
+
+Docs:
+  local_profile: documentation
+  candidate_models:
+    - qwen/gemma-class 7B–14B instruct model
+  external_fallback: OpenAI general model
+```
+
+**Directive boundaries:**
+
+- **100I** — End-to-end validation: **do not** implement model routing, **do not** treat provisional names as production choices; only ensure the architecture **does not block** future per-agent assignment.
+- **100R** — Owns: model profile registry, per-agent assignment, **SINGLE_MODEL_MODE**, **CADRE_MODE**, local-first execution, external fallback policy, fallback-reason logging, token/cost logging, model health checks, benchmark/fit validation for 32GB-class targets.
+- **Forbidden:** implementing model routing inside Nike, MCP, or the IDE; hard-coding final production models before **100R** acceptance tests.
+
+------------------------------------------------------------------------
+
 ## 1. Purpose
 
 Define the routing system responsible for selecting between local LLM
@@ -53,12 +131,14 @@ LangGraph Node → Router → Decision:
 -   RAG queries
 -   Routine reasoning
 
-### EXTERNAL (allowed)
+### EXTERNAL (fallback only — after local attempt)
 
--   Complex architecture reasoning
+Use external APIs **only** when local execution is insufficient or fails — never as the default path. Typical triggers include:
+
+-   Complex architecture reasoning beyond local confidence threshold
 -   Adversarial validation
--   High-context reasoning
--   Local failure
+-   High-context reasoning beyond local context limits
+-   Local failure or health degradation
 
 ------------------------------------------------------------------------
 

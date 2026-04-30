@@ -61,6 +61,18 @@ The system is governed by these non-negotiable principles:
 
 13. **Nike and event routing** must be designed so **future backend-managed agent types** can be added **without redesign** of the API → Nike → LangGraph spine. Minimum named hooks (graph nodes, events, or server-side handlers — not IDE-local orchestrators): **Engineer agent**, **Reviewer agent**, **Documentation agent**, **Debugger agent**, **Test agent**, **Security review agent**, **Performance review agent**, **Deployment/release agent**. Details: **Master Execution Guide §1**, **000P §3.3**, **100O** implementation alignment.
 
+14. **Model cadre (architecture — implementation in 100R):** Trident must **not** assume all agents share one LLM. The product SHALL support a configurable **model cadre**:
+
+    ```text
+    SINGLE_MODEL_MODE:
+      all agents use the same configured local model
+
+    CADRE_MODE:
+      each agent role may have its own assigned model profile
+    ```
+
+    **Required role → profile mapping (conceptual):** Architect → reasoning; Engineer → coding; Reviewer → validation/review; Debugger → diagnostic/code-fix; Docs → documentation/summarization. **External OpenAI/API models are fallback only**, not the default execution path. **Hardware planning target:** RTX 6000–class GPU, **32GB VRAM**; **local-first** runtime. **Provisional model names** are candidates until **100R** benchmarks and health checks validate fit — do not treat them as locked production choices. **100I** validates only that the **current design does not block** future per-agent assignment; **100I does not implement** model routing. **100R** owns registry, per-agent assignment, both modes, local-first routing, external fallback policy, fallback-reason logging, token/cost logging, model health checks, and VRAM-fit validation. Model routing MUST NOT be implemented in Nike, MCP, or the IDE.
+
 ---
 
 ## 3. Canonical Document Sequence
@@ -167,6 +179,14 @@ The system is governed by these non-negotiable principles:
 **Depends on:** **100G**  
 **Unlocks:** **100I**
 
+#### TRIDENT-IMPLEMENTATION-DIRECTIVE-100I
+**File:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100I_END_TO_END_VALIDATION.md`  
+**Type:** Implementation Directive  
+**Status:** Issued  
+**Purpose:** **End-to-end system validation** — full lifecycle proof on real stack (e.g. Postgres + compose); **no** LLM/model-router implementation (**100R**). Must confirm architecture does **not** obstruct future **model cadre** / per-agent profiles (see principle **§2.14**, **000G**, **100R**).  
+**Depends on:** **100H**  
+**Unlocks:** **100J**
+
 #### TRIDENT-IMPLEMENTATION-DIRECTIVE-100U
 **File:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100U_UI.md`  
 **Type:** Implementation Directive  
@@ -178,8 +198,8 @@ The system is governed by these non-negotiable principles:
 #### TRIDENT-IMPLEMENTATION-DIRECTIVE-100R
 **File:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100R_MODEL_ROUTER_LOCAL_FIRST.md`  
 **Type:** Implementation Directive  
-**Status:** Issued — **Deferred** (program-scheduled after **100G**)  
-**Purpose:** **Model router** — local-first LLM vs external API escalation per **000G**. Former content incorrectly filed as **100G**; relocated here.  
+**Status:** Issued — **Deferred** (program-scheduled after **100G**; **model cadre** and per-agent profiles fully specified there)  
+**Purpose:** **Model router** — local-first LLM vs external API escalation per **000G**; **SINGLE_MODEL_MODE** and **CADRE_MODE**; model profile registry; per-agent assignment; fallback reason + token/cost logging; health checks and benchmark validation for **32GB-class** local targets. Former LLM-router content incorrectly filed as **100G**; relocated here.  
 **Depends on:** **100G**, **100F**, **000G**
 
 ---

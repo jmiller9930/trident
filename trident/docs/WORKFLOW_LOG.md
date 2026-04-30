@@ -747,4 +747,34 @@ Merge on **`main`**: **`feat(100H): agent execution layer — LangGraph engineer
 
 ---
 
+## Directive: DOC_MODEL_CADRE_INTEGRATION — Model cadre architecture alignment
+
+**Status:** **PASS** (documentation-only; **no code**, **no APIs**, **no model runtime**)
+
+### Summary
+
+Formal integration of **model cadre** policy across **Manifest v1.0**, **Master Execution Guide v1.1**, **000G**, **100R**, **100H**, **100I**, and workflow logs.
+
+**Architecture rule:** **SINGLE_MODEL_MODE** (one shared local model) and **CADRE_MODE** (per-role model profiles: Architect / Engineer / Reviewer / Debugger / Docs). **Local-first**; **RTX 6000–class 32GB VRAM** planning target; **external OpenAI/API fallback only**. Provisional model names are **candidates** until **100R** benchmarks validate — **not** hard-coded production choices.
+
+### Placement
+
+| Directive | Role |
+|-----------|------|
+| **100I** | E2E validation only; **must not** implement LLM routing; **must** verify design **does not block** future per-agent assignment |
+| **100R** | Implements registry, cadre modes, local-first routing, fallback policy, fallback-reason logging, token/cost logging, health checks, VRAM-fit benchmarks |
+| **100H** | No model routing; avoid coupling that blocks **100R** |
+
+**Forbidden:** Model routing in Nike, MCP, or IDE.
+
+### Gate (program)
+
+**100I planning / implementation remain paused** until program **ACCEPT** on **`DOC_MODEL_CADRE_INTEGRATION`** documentation bundle (this alignment). After acceptance, **100I** proceeds under clarified scope (**subsystem/workflow** proofs; **no** cadre implementation).
+
+### Commit
+
+See engineering return (**Commit:** field below).
+
+---
+
 END

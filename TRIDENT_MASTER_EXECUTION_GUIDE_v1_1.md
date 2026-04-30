@@ -56,7 +56,19 @@ Implementation Directive (e.g., 100A) → Master Execution Guide → Governed Ex
 
 ## 1. System Overview
 
-Trident is a **memory-first, local-first control plane** for multi-agent software delivery. A **FastAPI (or equivalent) backend**, **worker**, **execution/MCP service**, **data and vector stores**, and **web UI** implement a single spine: **LangGraph** owns workflow and state transitions; **MCP** is the only governed execution and tool surface; **Git + file locks** gate every mutation; **shared memory + task ledger** hold durable truth; a **subsystem router (100G)** selects among MCP / LangGraph / Nike / memory-read paths (**decision only**); a **model router (100R**, deferred, LLD **000G**) handles **LLM** local-vs-external escalation separately; **proof and audit** close work.
+Trident is a **memory-first, local-first control plane** for multi-agent software delivery. A **FastAPI (or equivalent) backend**, **worker**, **execution/MCP service**, **data and vector stores**, and **web UI** implement a single spine: **LangGraph** owns workflow and state transitions; **MCP** is the only governed execution and tool surface; **Git + file locks** gate every mutation; **shared memory + task ledger** hold durable truth; a **subsystem router (100G)** selects among MCP / LangGraph / Nike / memory-read paths (**decision only**); a **model router (100R**, deferred, LLD **000G**) handles **LLM** local-vs-external escalation and the **model cadre** (see below) separately; **proof and audit** close work.
+
+**Model cadre (architecture — implement only under 100R):** The system must **not** assume one shared LLM for all agents. Supported modes:
+
+```text
+SINGLE_MODEL_MODE:
+  all agents use the same configured local model
+
+CADRE_MODE:
+  each agent role may have its own assigned model profile
+```
+
+Role→profile mapping, registry, health checks, benchmarks, and external fallback policy are **100R** scope. **Initial hardware planning target:** RTX 6000–class **32GB VRAM**, **local-first**; **external APIs fallback only**, not default. **100I** proves subsystem/workflow integrity only and must **verify the design does not block** future per-agent model assignment — **100I does not** implement LLM routing, call external model APIs for routing proof, or lock production model names (see **Manifest §2.14**, **000G**, **100R** directive).
 
 ### Backend as work-processing authority (IDE / Web → spine)
 
@@ -118,7 +130,7 @@ Each row lists **prior implementation steps**, **design directives (LLD)** that 
 | **100G** Subsystem / work-request Router | 100F | **000B**, **000P** (and refs in **100G** directive) — **not** LLD **000G** | MCP receipts + execution path proven; subsystem routing auth |
 | **100R** Model Router (deferred) | **100G** | **000G** | Subsystem router decisions observable; **100R** implements LLM routing |
 | **100H** Agent Execution Layer (backend) | **100G** | **000B**, **000F**, **000K** (and refs in **100H** directive) | Subsystem router accepted; LangGraph → MCP → audit path proven |
-| **100I** End-to-end validation | **100H** | **000I** | Agent execution + APIs proven; no mock-as-proof |
+| **100I** End-to-end validation | **100H** | **000I** | Agent execution + APIs proven; no mock-as-proof; **subsystem/workflow** proofs only — **no LLM model-router / cadre implementation** (deferred to **100R**); confirm architecture non-blocking for future per-agent profiles |
 | **100J** Deployment + production validation | **100I** | **000J**, **000M** | Full lifecycle test path exists |
 | **100U** Web UI | **100J** | **000H** | Deploy validation passed; panels bind to real APIs |
 | **100K** IDE bootstrap | **100U** | **000O** | Web control plane usable; API stable for IDE |
@@ -229,7 +241,7 @@ Abbreviated summary only; **acceptance and proof follow the implementation direc
 | **100G** | Subsystem routing (MCP/LG/Nike/memory read) + **ROUTER_DECISION_MADE** logs | Decision logs | UI lies about routing |
 | **100R** | Local-first **LLM** routing + logged escalation | Model decision logs | External LLM misuse |
 | **100H** | Agent registry + executor; MCP/memory via sanctioned services only | Audit chain; no subprocess bypass | **100I** blocked |
-| **100I** | E2E lifecycle + failure tests | Full audit trail | **100J** blocked |
+| **100I** | E2E lifecycle + failure tests (subsystem router, graph, MCP, memory, audit — **not** LLM cadre routing) | Full audit trail | **100J** blocked |
 | **100J** | Deploy checklist + prod validation | Install/backup/health proof | **100U** blocked |
 | **100U** | Panels bind to real APIs | No mock backend state | **100K** blocked |
 | **100K–100N** | IDE milestones per directive | IDE + API proofs per **100K–100N** | “Cursor-equivalent” IDE incomplete |

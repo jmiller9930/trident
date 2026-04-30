@@ -28,7 +28,8 @@ langgraph_required: true
 
 - **No UI responsibilities.** Web UI, panels, and visualization are **100U** (`TRIDENT_IMPLEMENTATION_DIRECTIVE_100U_UI.md`).
 - **No** subsystem/work-request routing logic (**100G** owns MCP | LANGGRAPH | NIKE | MEMORY routing).
-- **No** LLM model routing (**100R** / **000G**).
+- **No** LLM model routing (**100R** / **000G**). **Model cadre** (**SINGLE_MODEL_MODE** / **CADRE_MODE**, per-role profiles, local-first vs external fallback) is specified in **Manifest §2.14**, **000G §0a**, and **100R** — **not** implemented here.
+- Implementation must **avoid hard-coding** a single global production model identity in agent internals in a way that would **block** future per-role assignment under **100R** (e.g. prefer configuration/indirection at the executor boundary when wiring models becomes applicable).
 - Agents do **not** spawn subprocesses, shell, or bypass MCP for product execution.
 
 ---

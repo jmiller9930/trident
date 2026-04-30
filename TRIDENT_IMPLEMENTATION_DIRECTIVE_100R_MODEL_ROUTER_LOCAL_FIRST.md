@@ -14,8 +14,43 @@ dependencies:
   - TRIDENT_DIRECTIVE_000G_ROUTER_POLICY.md
 produces:
   - Local/external LLM routing implementation
+  - Model profile registry and per-agent assignment (SINGLE_MODEL_MODE + CADRE_MODE)
 langgraph_required: true
 ```
+
+---
+
+## 0a. Model cadre requirement (owned by **100R** — not **100I**)
+
+Architecture (**Manifest §2.14**, **000G §0a**) requires:
+
+```text
+SINGLE_MODEL_MODE:
+  all agents use the same configured local model
+
+CADRE_MODE:
+  each agent role may have its own assigned model profile
+```
+
+**Per-role profile intent:** Architect → reasoning; Engineer → coding; Reviewer → validation/review; Debugger → diagnostic/code-fix; Docs → documentation/summarization.
+
+**Planning hardware:** RTX 6000–class **32GB VRAM**, **local-first**; **external OpenAI/API fallback only**, not default execution.
+
+**Provisional model candidates** live in **000G §0a** — engineering must **not** treat them as production locks until **100R** benchmarks and health checks pass.
+
+**100I** must **not** implement cadre routing or external LLM calls for routing proof; it only validates that existing spine design **does not prevent** future **100R** assignment.
+
+**100R** must implement:
+
+- Model profile registry  
+- Per-agent (role) model assignment  
+- **SINGLE_MODEL_MODE** and **CADRE_MODE** configuration  
+- Local-first routing with logged external escalation and **fallback reason**  
+- Token/cost logging  
+- Model health checks  
+- Benchmark / fit validation for 32GB-class local targets  
+
+**Hard constraint:** Model routing logic is **not** implemented in Nike, MCP, or the IDE client — **backend model router** only (inside LangGraph-governed execution per **000G**).
 
 ---
 
@@ -39,12 +74,18 @@ This is **model routing**, not subsystem routing (see **100G**).
 
 Covers:
 
-- Routing decision engine (**model selection**)
+- Routing decision engine (**model selection**) including **cadre-aware** selection when **CADRE_MODE** is enabled
+- **Model profile registry** and mapping from graph agent roles to profiles
+- **SINGLE_MODEL_MODE** (one local model for all agents) and **CADRE_MODE** (role-specific profiles)
 - Local model adapter integration
-- External model adapter (stub or controlled call)
-- Escalation logic
+- External model adapter (stub or controlled call) — **fallback only**
+- Escalation logic and **fallback reason** logging
 - Token optimization preprocessor
+- **Token/cost** logging
+- **Model health checks** and benchmark/fit validation for documented **32GB VRAM** class targets
 - Logging and observability
+
+Does **not** cover: **100G** subsystem routing; Nike transport logic; MCP execution semantics; IDE-side routing.
 
 ---
 
