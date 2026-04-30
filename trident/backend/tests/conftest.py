@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -45,6 +46,9 @@ def client(sqlite_engine):
         try:
             yield db
             db.commit()
+        except HTTPException:
+            db.commit()
+            raise
         except Exception:
             db.rollback()
             raise

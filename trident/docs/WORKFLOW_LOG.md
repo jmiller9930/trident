@@ -356,4 +356,54 @@ Next: architect **ACCEPTED** plan → engineering **Build** → proof → **PASS
 
 ---
 
+## Directive: 100F — Step 3 Build (accepted plan)
+
+**Status:** PASS
+
+### Plan
+
+Implement MCP execution API (`POST /api/v1/mcp/classify`, `POST /api/v1/mcp/execute`) with simulated adapters only, HIGH explicit-approval gate, `ProofObject(EXECUTION_LOG)` receipts, and audits (`MCP_EXECUTION_REQUESTED`, `MCP_EXECUTION_COMPLETED`, `MCP_EXECUTION_REJECTED`, `MCP_EXECUTION_FAILED` available).
+
+### Plan Decision
+
+**ACCEPTED** — program authorization to proceed with Step 3 Build; simulated execution only; no router/memory/Nike/UI/file-git mutation.
+
+### Build Summary
+
+New `app/mcp/` package (classifier, validator, service, audit logger, FastAPI `mcp_router`, local + SSH **stub** adapters). Execute path persists EXECUTION_LOG proofs (including HIGH rejection receipts). DB session commits on `HTTPException` so rejection audits/receipts survive 403 responses.
+
+### Files Changed
+
+`trident/backend/app/mcp/**`, `trident/backend/app/schemas/mcp.py`, `trident/backend/app/api/routes.py`, `trident/backend/app/db/session.py`, `trident/backend/tests/conftest.py`, `trident/backend/tests/test_mcp_100f.py`, `trident/backend/clawbot_100f_proof.py`, `trident/backend/Dockerfile`, `trident/backend/app/models/enums.py`.
+
+### Commands Run
+
+`python3 -m pytest` — full suite **61 passed** (includes `tests/test_mcp_100f.py`).
+
+### Tests
+
+**PASS** — classification; LOW auto path; HIGH 403 without `explicitly_approved`; HIGH success with flag; ssh_stub adapter; invalid target; package contains no `subprocess` / `os.system`.
+
+### Proof
+
+API base `/api/v1/mcp/`; required context fields enforced; clawbot script `clawbot_100f_proof.py` (DB seed + httpx against live API). Git: merge commit titled **`feat(100F): MCP classify/execute API with simulated adapters`** (verify with `git log -1 --oneline`).
+
+### Gate Decision
+
+**PASS** — meets simulated-only execution, HIGH gate, receipt + audit visibility requirements.
+
+### Final State
+
+MCP classify/execute available for governed intent capture; unlocks **100G Router** per directive manifest (not implemented here).
+
+### Known Gaps
+
+SSH adapter remains stub; MEDIUM “optional approval” not modeled as separate token (execute always re-classifies); LangGraph node wiring to MCP API not in scope.
+
+### Unlock
+
+**100G** (Router) authorized per parent directive manifest when program issues next gate.
+
+---
+
 END

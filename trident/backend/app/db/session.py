@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -44,6 +44,9 @@ def get_db(
     try:
         yield session
         session.commit()
+    except HTTPException:
+        session.commit()
+        raise
     except Exception:
         session.rollback()
         raise
