@@ -897,9 +897,22 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 - **`trident/docs/OPERATIONS_RUNBOOK.md`:** env matrix, startup order, restart/recovery, failure matrix, audit SQL sample, **pg_dump** / **pg_restore** outline, notes on **`TRIDENT_BASE_PATH`** health URLs.
 - **Tests:** `pytest` **77 passed** (local).
 
-### Next
+---
 
-**100U** — Web UI — after **100L** acceptance.
+## Directive: **100L_FINAL** — Program ACCEPT
+
+**Status:** **CLOSED** — **ACCEPTED**
+
+- **Accepted commits:** **`26ef506`**, **`88ecbdb`**
+- **Verification:** Compose hardening, logging controls, runbook, bounded failure documentation, constraints respected; clawbot re-run **optional** (non-blocking per program).
+
+---
+
+## Directive: **100U** — UI Layer (Web Interface)
+
+**Status:** **ISSUED** — Step 1 Read + Step 2 Plan (await architect acknowledgment before Step 3 Build)
+
+**Authoritative file:** **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100U_UI.md`** · **Depends on:** **100L** · **Unlocks:** **100K** · **LLD gate:** **000H**
 
 ---
 
