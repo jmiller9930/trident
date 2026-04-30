@@ -487,13 +487,13 @@ Local engineering host may lack Docker/SSH to clawbot; final sign-off is on **cl
 
 ### Gate Decision
 
-Program **ACCEPTED** **100F_FINAL** as **PASS** (clawbot evidence recorded above). **100F** is formally closed. **100G** subsystem-router **implementation** remains blocked until doc conflict resolution is **ACCEPTED** and plan gate clears (see **DOC_100G_CONFLICT_RESOLUTION** below).
+Program **ACCEPTED** **100F_FINAL** as **PASS** (clawbot evidence recorded above). **100F** is formally closed. **DOC_100G_CONFLICT_RESOLUTION** is **ACCEPTED** (below); **100G** code build is **unblocked from documentation** and gated only by **plan ACK → Step 3 Build** (see §100G).
 
 ---
 
 ## Directive: DOC_100G_CONFLICT_RESOLUTION
 
-**Status:** PASS (documentation delivered — program acceptance on file set optional)
+**Status:** PASS **(ACCEPTED)**
 
 ### Plan
 
@@ -501,7 +501,7 @@ Separate **subsystem work-request router (100G)** from **model router / LLM esca
 
 ### Plan Decision
 
-**Engineering complete** — awaiting explicit program **ACCEPTED** if required by governance.
+**ACCEPTED** — program sign-off on documentation bundle (**commit `a5dc4f8`** baseline; verify current `main`).
 
 ### Files Changed
 
@@ -509,7 +509,7 @@ See git commit; includes new **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100R_MODEL_ROUT
 
 ### Gate Decision
 
-**PASS** (doc-only) — conflict explicitly documented; **100G build** still blocked until plan acceptance for implementation (unchanged enforcement).
+**PASS (ACCEPTED)** — documentation conflict closed. **100G implementation** is **no longer blocked by this doc gate**; governed execution still requires **explicit plan acknowledgment** before coding (**§100G**).
 
 ### Known Gaps
 
@@ -541,11 +541,11 @@ See git commit; includes new **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100R_MODEL_ROUT
 
 ### Plan Decision
 
-**PENDING** — await program **ACCEPTED** on this plan (and resolution of conflict with legacy `TRIDENT_IMPLEMENTATION_DIRECTIVE_100G_ROUTER.md` if required). **No Step 3 Build** until then.
+**Doc conflict:** **Resolved** and **ACCEPTED** (**DOC_100G_CONFLICT_RESOLUTION**). **Engineering plan (Step 2 above):** **PENDING** explicit program **ACCEPTED** — **no Step 3 Build** until plan ACK. **Build status:** **UNBLOCKED** from documentation; **blocked** only on plan acknowledgment per governed execution.
 
 ### Unlock
 
-After plan ACCEPT + build + proof: **100H+** per program.
+After **plan ACCEPT** → Step 3 Build → proof: **100H+** per program.
 
 ---
 
