@@ -56,7 +56,7 @@ def _ensure_seed(session) -> tuple[uuid.UUID, uuid.UUID, uuid.UUID]:
         ws = Workspace(id=uuid.uuid4(), name="Proof WS", description=None, created_by_user_id=u.id)
         session.add(ws)
         session.flush()
-    proj = session.scalar(select(Project).limit(1))
+    proj = session.scalar(select(Project).where(Project.workspace_id == ws.id).limit(1))
     if proj is None:
         proj = Project(
             id=uuid.uuid4(),
