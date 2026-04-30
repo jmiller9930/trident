@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.audit_clock import next_audit_created_at
 from app.models.audit_event import AuditEvent
 from app.models.enums import AuditActorType, AuditEventType
 
@@ -32,6 +33,7 @@ class AuditRepository:
             workspace_id=workspace_id,
             project_id=project_id,
             directive_id=directive_id,
+            created_at=next_audit_created_at(self._session),
         )
         self._session.add(row)
         return row

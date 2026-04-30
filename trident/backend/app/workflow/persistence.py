@@ -9,6 +9,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.audit_clock import next_audit_created_at
 from app.models.audit_event import AuditEvent
 from app.models.directive import Directive
 from app.models.enums import AgentRole, AuditActorType, AuditEventType, TaskLifecycleState
@@ -71,6 +72,7 @@ def record_node(
             },
             actor_type=AuditActorType.SYSTEM.value,
             actor_id=f"spine:{node}",
+            created_at=next_audit_created_at(session),
         )
     )
     session.add(
@@ -86,6 +88,7 @@ def record_node(
             },
             actor_type=AuditActorType.SYSTEM.value,
             actor_id=f"spine:{node}",
+            created_at=next_audit_created_at(session),
         )
     )
 
