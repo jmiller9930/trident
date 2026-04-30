@@ -234,6 +234,9 @@ def main() -> int:
             mem = _agent_memory_row(session, did)
             if mem:
                 _print_kv("Memory_write_proof", f"title={mem.title} vector_state={mem.vector_state}")
+            proof_v = _mcp_proof_for_directive(session, did)
+            if proof_v:
+                _print_kv("EXECUTION_LOG", str(proof_v.id))
             _print_kv("Status", "PASS" if ok else "FAIL")
             if ok:
                 _print_kv("restart_verify_PASS", "1")
@@ -291,6 +294,7 @@ def main() -> int:
 
         proof = _mcp_proof_for_directive(session, did)
         if proof:
+            _print_kv("EXECUTION_LOG", str(proof.id))
             _print_kv("MCP_receipt_proof_object_id", str(proof.id))
             try:
                 receipt = json.loads(proof.proof_summary or "{}")
