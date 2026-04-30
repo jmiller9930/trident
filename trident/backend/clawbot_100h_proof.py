@@ -132,7 +132,8 @@ def _every_mcp_completed_follows_agent_mcp_request(types: list[str]) -> tuple[bo
     return True, "ok"
 
 
-def _find_agent_chain(types: list[str]) -> bool:
+def _find_agent_audit_ordered_subsequence(types: list[str]) -> bool:
+    """Required agent+MCP+memory+result types appear in order; other audits may interleave (Postgres/Chroma reality)."""
     want = (
         AuditEventType.AGENT_INVOCATION.value,
         AuditEventType.AGENT_DECISION.value,
@@ -142,20 +143,11 @@ def _find_agent_chain(types: list[str]) -> bool:
         AuditEventType.MEMORY_WRITE.value,
         AuditEventType.AGENT_RESULT.value,
     )
-    i = 0
-    while i < len(types):
-        if types[i] != want[0]:
-            i += 1
-            continue
-        ok = True
-        for j, w in enumerate(want):
-            if i + j >= len(types) or types[i + j] != w:
-                ok = False
-                break
-        if ok:
-            return True
-        i += 1
-    return False
+    j = 0
+    for t in types:
+        if j < len(want) and t == want[j]:
+            j += 1
+    return j == len(want)
 
 
 def _agent_memory_row(session: Session, directive_id: uuid.UUID) -> MemoryEntry | None:
@@ -182,8 +174,8 @@ def _mcp_proof_for_directive(session: Session, directive_id: uuid.UUID) -> Proof
 
 def _validate_db(session: Session, directive_id: uuid.UUID) -> tuple[bool, str]:
     types = _ordered_audit_types(session, directive_id)
-    if not _find_agent_chain(types):
-        return False, "audit_chain_missing_required_subsequence"
+    if not _find_agent_audit_ordered_subsequence(types):
+        return False, "audit_chain_missing_required_ordered_subsequence"
 
     bypass_ok, bypass_reason = _every_mcp_completed_follows_agent_mcp_request(types)
     if not bypass_ok:

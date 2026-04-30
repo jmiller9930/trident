@@ -29,7 +29,7 @@ def _create_directive(session: Session, ids: dict[str, uuid.UUID]) -> uuid.UUID:
     return d.id
 
 
-def _agent_audit_sequences(rows: list[AuditEvent]) -> list[list[str]]:
+def _agent_audit_ordered_subsequence_present(rows: list[AuditEvent]) -> bool:
     types = [r.event_type for r in rows]
     want = (
         AuditEventType.AGENT_INVOCATION.value,
@@ -40,21 +40,11 @@ def _agent_audit_sequences(rows: list[AuditEvent]) -> list[list[str]]:
         AuditEventType.MEMORY_WRITE.value,
         AuditEventType.AGENT_RESULT.value,
     )
-    chunks: list[list[str]] = []
-    i = 0
-    while i < len(types):
-        if types[i] == want[0]:
-            chunk = []
-            for j, w in enumerate(want):
-                if i + j >= len(types) or types[i + j] != w:
-                    break
-                chunk.append(types[i + j])
-            if len(chunk) == len(want):
-                chunks.append(chunk)
-                i += len(want)
-                continue
-        i += 1
-    return chunks
+    j = 0
+    for t in types:
+        if j < len(want) and t == want[j]:
+            j += 1
+    return j == len(want)
 
 
 def test_engineer_agent_emits_governed_audit_chain(db_session: Session, minimal_project_ids: dict[str, uuid.UUID]) -> None:
@@ -65,8 +55,7 @@ def test_engineer_agent_emits_governed_audit_chain(db_session: Session, minimal_
     rows = db_session.scalars(
         select(AuditEvent).where(AuditEvent.directive_id == did).order_by(AuditEvent.created_at.asc())
     ).all()
-    chunks = _agent_audit_sequences(rows)
-    assert len(chunks) >= 1, "expected one full engineer agent audit chain"
+    assert _agent_audit_ordered_subsequence_present(rows), "expected ordered AGENT→MCP→MEMORY_WRITE→AGENT_RESULT subsequence"
 
 
 def test_engineer_writes_agent_memory_title(db_session: Session, minimal_project_ids: dict[str, uuid.UUID]) -> None:

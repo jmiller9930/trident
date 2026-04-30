@@ -673,7 +673,7 @@ Program **ACCEPTED** **100G_FINAL** — subsystem router implementation + clawbo
 ### Proof checklist (local — filled)
 
 - **Scope:** `app/agents/` — `schemas`, `agent_context`, `agent_logger`, `agent_registry`, `agent_executor`; **`engineer`** spine node calls **`run_engineer_agent_phase`** after **`record_node`**.
-- **Audits (expected for workflow directive):** `AGENT_INVOCATION` → `AGENT_DECISION` → `AGENT_MCP_REQUEST` → `MCP_EXECUTION_REQUESTED` → `MCP_EXECUTION_COMPLETED` → `MEMORY_WRITE` → `AGENT_RESULT` (ordered subsequence).
+- **Audits (expected for workflow directive):** `AGENT_INVOCATION` → `AGENT_DECISION` → `AGENT_MCP_REQUEST` → `MCP_EXECUTION_REQUESTED` → `MCP_EXECUTION_COMPLETED` → `MEMORY_WRITE` → `AGENT_RESULT` as an **ordered subsequence** (other audits such as `MEMORY_READ_ACCESS` may interleave; clawbot does **not** require adjacency).
 - **Memory:** Stub supplies **`memory_write`** → **`MemoryWriter.write_from_graph`** only; structured row authoritative; **vector** state recorded (**`VECTOR_INDEXED`** preferred when Chroma healthy).
 - **Hygiene:** `app/agents/**/*.py` contains **no** `subprocess` / `os.system` (see **`tests/test_agents_100h.py`**).
 - **Tests:** `cd trident/backend && python3 -m pytest -q` — full suite green in engineering CI/local.
