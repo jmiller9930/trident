@@ -1132,6 +1132,8 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 
 Engineering **will not** start **100M** Step 3 until **Option A** is underway **accepted** or **Option B** is **explicitly** authorized in writing.
 
+**Receipt:** **`a0b89de`** (**W-030**).
+
 **When unblocked — intended Step 3 slices (preview):**
 
 1. **FIX 003** (or waiver) — heartbeat / stale semantics per fix doc; align with existing **`LockStatus`** / TTL or extend schema with migrations + audits.
