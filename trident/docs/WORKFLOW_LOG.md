@@ -1107,9 +1107,30 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 
 ### Step 2 — Plan (engineering)
 
-**Directive: `100M_PLAN` · Status: `BLOCKED`** — log receipt **`695babc`**
+**Directive: `100M_PLAN` · Status: `BLOCKED (CONFIRMED)`** — log **`695babc`** / **`19ac3be`**
 
-**Reason:** **`TRIDENT_MASTER_EXECUTION_GUIDE_v1_1.md`** §5 and **`TRIDENT_FIX_DIRECTIVE_003`** §8 require **FIX 003** completion **before** **100M** Step 3 Build. Engineering cannot honestly authorize **100M** implementation until **FIX 003** is **scoped + ACCEPTED** (or the **program issues a written waiver** of that gate).
+**Reason:** **`TRIDENT_MASTER_EXECUTION_GUIDE_v1_1.md`** §5 and **`TRIDENT_FIX_DIRECTIVE_003`** §8 require **FIX 003** completion **before** **100M** Step 3 Build. Engineering cannot authorize **100M** implementation until **FIX 003** is **scoped + ACCEPTED** (or the **program issues a written waiver** of that gate).
+
+---
+
+### Architect confirmation — **100M** **BLOCKED_CONFIRMED**
+
+**Directive: `100M` · Status: `BLOCKED_CONFIRMED`**
+
+**Authority cited:** Master Execution Guide **v1.1** §5; **`TRIDENT_FIX_DIRECTIVE_003_LOCK_HEARTBEAT_EXPIRY.md`** §8.
+
+**Finding:** **100P** TTL / **`expires_at`** does **not** satisfy **FIX 003** (heartbeat, stale/recovery model, visibility guarantees).
+
+**Required program decision** — pick one before any **100M** Step 3 work:
+
+| Option | Meaning |
+|--------|---------|
+| **A (default)** | Implement **FIX 003** first → then resume **100M**. |
+| **B (override — not preferred)** | Proceed **100M** without **FIX 003** only after **explicit** acceptance of risk: stale locks, ownership edge cases, missing heartbeat/recovery guarantees. |
+
+**Next state:** **`WAITING_FOR_PROGRAM_DECISION (FIX_003 vs WAIVER)`**
+
+Engineering **will not** start **100M** Step 3 until **Option A** is underway **accepted** or **Option B** is **explicitly** authorized in writing.
 
 **When unblocked — intended Step 3 slices (preview):**
 

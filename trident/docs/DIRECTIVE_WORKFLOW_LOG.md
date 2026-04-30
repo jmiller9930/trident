@@ -19,7 +19,8 @@
 
 | ID | Directive | Phase | Proof summary (engineering) | Architect decision | Logged |
 |----|-----------|-------|------------------------------|--------------------|--------|
-| W-029 | **100M** | Phase 2 — Read + Plan | **Step 1 Read** + **Step 2 Plan:** **`100M`** vs **`simulated-mutation`**; IDE patch layout; **FIX 003** gate blocks **`100M_PLAN` READY**. Log: **`WORKFLOW_LOG.md`** §100M. **Commit:** **`695babc`**. | **PENDING** — resolve **FIX 003** vs waiver | 2026-04-30 |
+| W-030 | **100M** | Gate — architect ACK block | Architect **ACCEPT** engineering block; **`100M_PLAN`** **`BLOCKED (CONFIRMED)`**; **`100M`** **`BLOCKED_CONFIRMED`**; **FIX 003** required per **Master Guide v1.1** §5 + **FIX 003** §8; **Option A / B** decision recorded in **`WORKFLOW_LOG.md`** §100M. Proof commit TBD. | **BLOCKED_CONFIRMED** — **`WAITING_FOR_PROGRAM_DECISION`** | 2026-04-30 |
+| W-029 | **100M** | Phase 2 — Read + Plan | **Step 1 Read** + **Step 2 Plan:** **`100M`** vs **`simulated-mutation`**; **FIX 003** gate. **Commits:** **`695babc`**, **`19ac3be`**. | Superseded by **W-030** confirmation | 2026-04-30 |
 | W-028 | **100P** / **100P_FINAL** | Step 3 → ACCEPT | **`GET /api/v1/locks/active`** + TTL + IDE governance; **`pytest` 83**. **Commits:** **`565b6ae`**, **`c162fca`**. | **ACCEPTED** — **CLOSED** | 2026-04-30 |
 | W-027 | **100P** | Phase 2 — Read + Plan | Plan delivered; **`100P_PLAN` ACCEPTED**. **Commits:** **`7ff7a7d`**, **`b35df98`**. | Superseded by **W-028** | 2026-04-30 |
 | W-026 | **100K** / **100K_FINAL** | Step 3 → ACCEPT | **`POST /api/v1/ide/chat`** stub + **`IDE_CHAT_*`** + **`CHAT_LOG`**; extension; **`pytest` 79**. **Commits:** **`dc5e2dc`**, **`08195af`**. | **ACCEPTED** — **CLOSED** | 2026-04-30 |
