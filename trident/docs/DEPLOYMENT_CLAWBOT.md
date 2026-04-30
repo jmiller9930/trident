@@ -57,6 +57,50 @@ With prerequisites satisfied:
 5. `docker compose restart trident-api` — health still OK (restart persistence)
 6. Confirm `.env` with secrets is **not** committed (only `.env.example` in git)
 
+## Git alignment (100A final — required)
+
+Deployments must follow:
+
+```text
+local → commit → push → clawbot → pull → run → prove
+```
+
+**No exceptions.**
+
+### Checkout layout on clawbot
+
+After `git clone <REMOTE_URL> trident` under `~/code_projects/trident`, the **repository root** is `~/code_projects/trident/trident`. Compose and runtime live **one level deeper**:
+
+```text
+~/code_projects/trident/trident/trident/docker-compose.yml
+```
+
+Deploy from that directory (not the repo root):
+
+```bash
+cd ~/code_projects/trident/trident/trident
+cp .env.example .env   # configure TRIDENT_* first if needed
+docker compose up -d --build
+```
+
+### Initial alignment (if the tree was copied without `.git`)
+
+```bash
+cd ~/code_projects/trident/trident && docker compose down 2>/dev/null || true
+cd ~/code_projects/trident && rm -rf trident
+git clone <REMOTE_URL> trident
+cd trident
+git checkout main
+git pull origin main
+git rev-parse HEAD
+cd trident
+cp .env.example .env
+docker compose down 2>/dev/null || true
+docker compose up -d --build
+```
+
+Replace `<REMOTE_URL>` with your canonical **origin** (same remote used from developer laptops).
+
 ## Stop condition
 
 If clawbot lacks Docker, Compose, DNS, persistent storage, or a viable reverse-proxy path for `/trident`, **stop** and report gaps **before** relying on this deployment path.
