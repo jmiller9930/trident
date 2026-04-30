@@ -936,7 +936,60 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 
 **Status:** **CLOSED** — **PASS_CONFIRMED** (clawbot build/up/curl + UI captures).
 
-**Next:** **100K** — IDE bootstrap — unblocked per manifest after **100U** acceptance.
+**Architect:** **FULLY ACCEPTED** — commits **`34ba2a1`**, **`e224996`**, **`431e9ce`**. **CORE SYSTEM + UI = VERIFIED.**
+
+**Next:** **100K** — IDE bootstrap — **ISSUED** (Phase 2).
+
+---
+
+## Directive: **100K** — IDE Client Bootstrap (VS Code / Code - OSS Extension)
+
+**Authoritative file:** **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100K_IDE_BOOTSTRAP.md`** · **Depends on:** **000O**, **100U** (both **ACCEPTED**) · **Unlocks:** **100P** · **Architecture:** **`TRIDENT_DIRECTIVE_000O_CODE_OSS_IDE_CLIENT_ARCHITECTURE.md`**
+
+### Step 1 — Read (engineering) — **COMPLETE**
+
+**Directive intent:** Ship a **VS Code–compatible extension** that is a **thin client** of **trident-api**: configurable base URL, health/reconnect, sidebar summary, **read-only** directive list/detail, **backend-driven** chat (no local LLM / no direct external APIs), agent/router/git-lock **visibility** (read-only; **no file mutation**, **no bypass**).
+
+**Repo today:** **No** `trident-ide-extension/` tree yet — greenfield per §4 layout in **100K**.
+
+**Backend surface already usable (read-mostly):**
+
+| Capability | Existing API (prefix = **`{api_router_prefix}`** + **`/v1`**, see **`Settings.api_router_prefix`** / **`TRIDENT_BASE_PATH`**) |
+|------------|-------------------------------------------------------------------------------------------------------------------------------|
+| Health | **`GET /health`** (included on **`api_router`**) |
+| Directives list / detail | **`GET /v1/directives/`**, **`GET /v1/directives/{id}`** |
+| Workflow summary / memory | **`GET /v1/memory/directive/{directive_id}`** (ledger, handoffs, entries, proofs — same pattern as **100U**) |
+| Subsystem router (last decision UX) | **`POST /v1/router/route`** — extension may POST a **classification-only** payload and show **response JSON** as “last router decision” (**no** extra orchestration in IDE) |
+| Locks / Git errors (read-only display) | No **`GET /git/status`** today; **100E** exposes **mutating** lock endpoints. **Read-only** status can mirror **100U**: surface **GIT\_\*** / lock-related context from **memory** proofs and directive detail **where present**, without calling **`POST /v1/locks/*`** in **100K**. |
+
+**Gap vs §5.3 / §7 tests (“chat sends/receives”):** There is **no** first-class **`/v1/.../chat`** or agent completion endpoint today; **Nike** ingest exists (**`POST /v1/nike/events`**) but **`NikeEventType`** currently documents **`DIRECTIVE_CREATED`** only — **no** IDE prompt handler path that returns user-visible text without **Step 3** API/worker work.
+
+**Config:** Directive example **`TRIDENT_API_URL=http://localhost:8000`** — engineering will normalize to **`{TRIDENT_API_URL}{base}/api/v1/...`** matching **`main.build_app`** (**`api_router_prefix`** defaults to **`/api`**; **`TRIDENT_BASE_PATH`** prefixes the app).
+
+**Tests:** **100K** asks for extension-load + integration-style checks — plan uses **`@vscode/test-electron`** or **`vscode-test`** style harness **where feasible**, plus documented manual proof (screenshots / sample responses) per §8.
+
+---
+
+### Step 2 — Plan (engineering)
+
+**Directive: `100K_PLAN` · Status: `READY`** (pending architect **ACK** before Step 3 Build)
+
+**Deliverable layout:** New top-level **`trident-ide-extension/`** (or **`ide-extension/`** under repo root — pick one in Step 3; **100K** diagram uses **`trident-ide-extension/`**) with **`package.json`**, **`src/extension.ts`**, **`src/api/tridentClient.ts`**, **`src/utils/config.ts`** (**`trident.apiBaseUrl`**, **`trident.basePath`** optional), panels + sidebar as specified.
+
+**Implementation slices (ordered):**
+
+1. **Scaffold + config + client** — VS Code extension activation; **`TridentClient`** with **`fetch`**, timeouts, **`GET /health`**, base URL normalization (**`/api/v1`**).
+2. **Sidebar (`tridentSidebar.ts`)** — connection indicator; **active directive** (user picks from list or last-used stored in **`globalState`**); **placeholder project** (display-only until **100P** project registry UX); **agent snapshot** from **`GET /v1/directives/{id}`** + **`GET /v1/memory/directive/{id}`** (derive “current node” / role strings from ledger + memory, best-effort).
+3. **Directive panel** — **`GET /v1/directives/`** table Webview or Tree; detail pane read-only.
+4. **Agent panel** — same sources as sidebar expanded.
+5. **Status panel** — last **`POST /v1/router/route`** result (user-triggered “Ping router” or auto with canned minimal body **only if** architect accepts harmless classifier demo payload); memory-sourced GIT/limitation notes like **100U**.
+6. **Chat panel** — **requires minimal backend slice** in Step 3 Build (recommended): add **`IDE_USER_PROMPT`** (name TBD) **Nike event type** + **worker handler** that completes with a **deterministic, audited stub reply** (no LLM), **or** a tiny **`POST /v1/ide/chat`** that writes audit + returns JSON **`{ "reply": "..." }`** — **either way**, extension only calls **trident-api**, displays **`reply`**. **Alternative (BLOCKED path):** defer chat panel until a separate directive adds governed chat — would fail §7 chat tests; **not** recommended.
+
+**Explicit Step 3 non-goals (per §6):** No **`POST /v1/locks/*`**, no file edits, no local OpenAI/Anthropic keys, no mocked JSON fixtures as primary source.
+
+**Proof package (Step 3):** Extension VSIX / **`vsce package`** note; install screenshot; **`curl`** or log snippets for health + directives + chat round-trip; **`pytest`** unchanged unless new API routes added (then extend tests).
+
+**Risk / dependency:** Chat acceptance **depends** on agreeing the **minimal stub API** above — if architect forbids any backend change in **100K**, engineering must return **`100K_PLAN` → `BLOCKED`** and request scope split.
 
 ---
 
