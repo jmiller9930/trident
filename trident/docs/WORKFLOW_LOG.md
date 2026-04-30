@@ -491,4 +491,36 @@ Program **ACCEPTED** **100F_FINAL** as **PASS** (clawbot evidence recorded above
 
 ---
 
+## Directive: 100G — Router (orchestration layer)
+
+**Status:** PLANNING
+
+### Plan (Step 1 — Read)
+
+- **Issued:** program message — control/orchestration router; **decides only**; no execution, subprocess, MCP bypass, file or memory writes, no direct workflow runs, no risk classification.
+- **Depends on:** **100F** (closed / ACCEPTED).
+- **Code today:** no `app/router/` package. `AuditEventType.ROUTER_DECISION` exists in `enums.py` but is **not emitted** anywhere. Subsystem **entrypoints** already exist: LangGraph `POST /v1/directives/{id}/workflow/run`; MCP `POST /v1/mcp/classify|execute`; Nike `POST/GET /v1/nike/events...`; memory read `GET /v1/memory/directive/{id}` (and project scope).
+- **Document conflict:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100G_ROUTER.md` still describes **local-first LLM / external escalation** (model adapters, token optimizer). That is **not** the same as the **issued 100G** (subsystem routing). Build plan will follow **issued 100G**; implementation doc may need program rename/supersession later.
+
+### Plan (Step 2 — Plan, pre-build)
+
+1. **Modules (as issued):** `backend/app/router/router_service.py`, `router_classifier.py`, `router_validator.py`, `router_logger.py`.
+2. **Input:** `directive_id`, `task_id`, `agent_role`, `intent` (string or small enum), `payload` (JSON, optional) — same identity validation pattern as **100F** MCP (directive exists; task belongs to directive; agent role normalized).
+3. **Output:** JSON `{ "route": "MCP|LANGGRAPH|NIKE|MEMORY", "reason": "...", "next_action": "...", "validated": true|false }` — `next_action` = suggested HTTP path or operation id **only** (caller executes), not an inline execution.
+4. **Classifier:** map `intent` → route per boundaries: execution intent → **MCP**; workflow progression → **LANGGRAPH**; event propagation → **NIKE**; read-only knowledge → **MEMORY**; **ambiguous/unknown → fail closed** (`validated: false`, no route or explicit `AMBIGUOUS`).
+5. **Logging:** add `AuditEventType.ROUTER_DECISION_MADE` (or program-approved alias); payload includes `intent`, `route`, `reason`, `next_action`, `directive_id`, `task_id` (no secrets). `router_logger.py` uses `AuditRepository` + directive `workspace_id` / `project_id`.
+6. **API:** `POST /api/v1/router/route` (or `/router/decide`) — body = input contract; response = output contract; **no calls** to MCP, memory, Nike, or workflow from router code path (static strings for `next_action` only).
+7. **Tests:** table tests for each route + ambiguous fail-closed; invalid FK / bad input → 4xx; assert router module does not import subprocess / mcp execute client / memory writer; optional `ast` scan like **100F** for forbidden imports.
+8. **Proof (for later build):** sample audits `ROUTER_DECISION_MADE` for all four routes; show no DB mutation beyond audit row (and no proof_objects unless program requests).
+
+### Plan Decision
+
+**PENDING** — await program **ACCEPTED** on this plan (and resolution of conflict with legacy `TRIDENT_IMPLEMENTATION_DIRECTIVE_100G_ROUTER.md` if required). **No Step 3 Build** until then.
+
+### Unlock
+
+After plan ACCEPT + build + proof: **100H+** per program.
+
+---
+
 END
