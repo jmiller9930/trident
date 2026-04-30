@@ -773,7 +773,7 @@ Formal integration of **model cadre** policy across **Manifest v1.0**, **Master 
 
 ### Commit
 
-See engineering return (**Commit:** field below).
+**`508c109`** — `docs(DOC_MODEL_CADRE_INTEGRATION): model cadre policy; 100I vs 100R scope`
 
 ---
 
