@@ -26,7 +26,7 @@ import httpx
 from sqlalchemy import func, select
 
 from app.config.settings import Settings
-from app.db.session import create_engine_for_settings, session_factory_for_settings
+from app.db.session import session_factory_for_settings
 from app.models.audit_event import AuditEvent
 from app.models.enums import AuditEventType, ProofObjectType
 from app.models.project import Project
@@ -139,7 +139,7 @@ def phase_restart_low(cfg: Settings, directive_id: uuid.UUID, task_id: uuid.UUID
 
 
 def phase_full(cfg: Settings) -> int:
-    SessionLocal = session_factory_for_settings(create_engine_for_settings(cfg))
+    SessionLocal = session_factory_for_settings(cfg)
     with SessionLocal() as session:
         directive_id, task_id = _bootstrap_directive(session)
 
