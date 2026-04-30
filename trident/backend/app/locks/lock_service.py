@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.locks.constants import LockStatus
@@ -36,6 +37,38 @@ class LockService:
         self._session = session
         self._audit = AuditRepository(session)
 
+    def _expire_stale_locks_for_path(self, *, project_id: uuid.UUID, fp: str) -> None:
+        """Release ACTIVE rows past expires_at so TTL locks do not block unique index."""
+        now = datetime.now(timezone.utc)
+        rows = list(
+            self._session.scalars(
+                select(FileLock).where(
+                    FileLock.project_id == project_id,
+                    FileLock.file_path == fp,
+                    FileLock.lock_status == LockStatus.ACTIVE.value,
+                    FileLock.released_at.is_(None),
+                    FileLock.expires_at.is_not(None),
+                    FileLock.expires_at <= now,
+                )
+            ).all()
+        )
+        for lock in rows:
+            directive = self._session.get(Directive, lock.directive_id)
+            ws_id = directive.workspace_id if directive else None
+            lock.lock_status = LockStatus.RELEASED.value
+            lock.released_at = now
+            self._audit.record(
+                event_type=AuditEventType.LOCK_RELEASED,
+                event_payload={"reason": "ttl_expired", "lock_id": str(lock.id), "file_path": fp},
+                actor_type=AuditActorType.SYSTEM,
+                actor_id="trident-api",
+                workspace_id=ws_id,
+                project_id=project_id,
+                directive_id=lock.directive_id,
+            )
+        if rows:
+            self._session.flush()
+
     def acquire(
         self,
         *,
@@ -44,6 +77,7 @@ class LockService:
         agent_role: str,
         user_id: uuid.UUID,
         relative_file_path: str,
+        ttl_seconds: int | None = None,
     ) -> FileLock:
         """Create ACTIVE lock; rejects duplicate active (project_id, file_path). directive_id required."""
         fp = normalize_relative_file_path(relative_file_path)
@@ -52,6 +86,8 @@ class LockService:
             raise ValueError("directive_not_found")
         if directive.project_id != project_id:
             raise ValueError("directive_project_mismatch")
+
+        self._expire_stale_locks_for_path(project_id=project_id, fp=fp)
 
         existing = find_active_lock(self._session, project_id=project_id, file_path_normalized=fp)
         if existing is not None:
@@ -73,6 +109,9 @@ class LockService:
             self._session.commit()
             raise LockConflictError()
 
+        exp: datetime | None = None
+        if ttl_seconds is not None and ttl_seconds > 0:
+            exp = datetime.now(timezone.utc) + timedelta(seconds=int(ttl_seconds))
         row = FileLock(
             project_id=project_id,
             directive_id=directive_id,
@@ -81,6 +120,7 @@ class LockService:
             locked_by_user_id=user_id,
             lock_status=LockStatus.ACTIVE.value,
             released_at=None,
+            expires_at=exp,
         )
         try:
             with self._session.begin_nested():

@@ -4,17 +4,20 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
+from app.config.settings import Settings
+from app.db.session import get_db, get_settings_dep
 from app.locks.constants import LockStatus
 from app.locks.exceptions import GitValidationError, LockConflictError, LockNotFoundError, LockOwnershipError
-from app.locks.lock_service import LockService
+from app.locks.lock_service import LockService, normalize_relative_file_path
+from app.locks.lock_validator import find_active_lock
 from app.locks.simulated_mutation import SimulatedMutationPipeline
 from app.schemas.locks import (
     LockAcquireRequest,
     LockAcquireResponse,
+    LockActiveResponse,
     LockReleaseRequest,
     LockReleaseResponse,
     SimulatedMutationRequest,
@@ -24,8 +27,39 @@ from app.schemas.locks import (
 router = APIRouter()
 
 
+@router.get("/active", response_model=LockActiveResponse)
+def get_active_lock(
+    project_id: uuid.UUID = Query(...),
+    file_path: str = Query(..., min_length=1, max_length=4096),
+    db: Session = Depends(get_db),
+) -> LockActiveResponse:
+    """Read-only: active lock for project + relative path, respecting expires_at."""
+    try:
+        fp = normalize_relative_file_path(file_path)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    row = find_active_lock(db, project_id=project_id, file_path_normalized=fp)
+    if row is None:
+        raise HTTPException(status_code=404, detail="no_active_lock")
+    return LockActiveResponse(
+        lock_id=row.id,
+        project_id=row.project_id,
+        directive_id=row.directive_id,
+        file_path=row.file_path,
+        locked_by_user_id=row.locked_by_user_id,
+        locked_by_agent_role=row.locked_by_agent_role,
+        lock_status=row.lock_status,
+        expires_at=row.expires_at,
+    )
+
+
 @router.post("/acquire", response_model=LockAcquireResponse)
-def acquire_lock(body: LockAcquireRequest, db: Session = Depends(get_db)) -> LockAcquireResponse:
+def acquire_lock(
+    body: LockAcquireRequest,
+    db: Session = Depends(get_db),
+    cfg: Settings = Depends(get_settings_dep),
+) -> LockAcquireResponse:
+    ttl = cfg.lock_ttl_sec if cfg.lock_ttl_sec > 0 else None
     try:
         row = LockService(db).acquire(
             project_id=body.project_id,
@@ -33,6 +67,7 @@ def acquire_lock(body: LockAcquireRequest, db: Session = Depends(get_db)) -> Loc
             agent_role=body.agent_role,
             user_id=body.user_id,
             relative_file_path=body.file_path,
+            ttl_seconds=ttl,
         )
     except LockConflictError:
         raise HTTPException(status_code=409, detail="lock_conflict") from None

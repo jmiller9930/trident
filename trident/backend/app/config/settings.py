@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     nike_max_attempts: int = 5
     """Base delay before returning an event to PENDING after a retriable failure (seconds)."""
     nike_retry_backoff_sec: float = 1.0
+    """When > 0, new lock rows set expires_at = now + TTL (100P); 0 disables TTL."""
+    lock_ttl_sec: int = 0
 
     @field_validator("base_path", mode="before")
     @classmethod

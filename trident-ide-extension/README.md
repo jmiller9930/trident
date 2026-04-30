@@ -17,6 +17,11 @@ Open this folder in VS Code and run **Run Extension** (F5). Ensure API is up, e.
 - **Sidebar** — connection hint, read-only directive list, shortcuts for chat / agent JSON / health.
 - **Chat** — **`POST /api/v1/ide/chat`** (deterministic stub + audits + **`CHAT_LOG`** proof on the server).
 - **Agent state** — opens JSON combining directive detail + **`/api/v1/memory/directive/{id}`**.
+- **100P governance** — set **`trident.projectId`**, **`trident.userId`**, select an active directive, then **Trident: Acquire lock for active file**. Saves are blocked without a matching backend lock (**`GET /api/v1/locks/active`**); edits are rolled back if the lock disappears or mismatches. Toggle **`trident.editGovernanceEnabled`** to disable locally.
+
+### FIX 001 — residual bypass
+
+VS Code cannot prevent edits outside this extension host (shell redirection, other editors, malicious extensions). Backend locks remain authoritative for **team / audit** truth; this milestone implements **best-effort** in-editor enforcement only.
 
 ## API paths
 
@@ -31,6 +36,9 @@ src/
   utils/config.ts
   sidebar/tridentSidebar.ts
   panels/chatPanel.ts
+  locking/lockClient.ts
+  locking/lockInterceptor.ts
+  editors/editGuard.ts
 ```
 
 ## Packaging

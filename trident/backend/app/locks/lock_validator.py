@@ -1,10 +1,11 @@
-"""Strict lock ownership checks (100E)."""
+"""Strict lock ownership checks (100E / 100P expiry)."""
 
 from __future__ import annotations
 
 import uuid
+from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.locks.constants import LockStatus
@@ -17,13 +18,17 @@ def find_active_lock(
     *,
     project_id: uuid.UUID,
     file_path_normalized: str,
+    now: datetime | None = None,
 ) -> FileLock | None:
+    """Active row: ACTIVE, not released, and not past expires_at (if set)."""
+    t = now if now is not None else datetime.now(timezone.utc)
     return session.scalar(
         select(FileLock).where(
             FileLock.project_id == project_id,
             FileLock.file_path == file_path_normalized,
             FileLock.lock_status == LockStatus.ACTIVE.value,
             FileLock.released_at.is_(None),
+            or_(FileLock.expires_at.is_(None), FileLock.expires_at > t),
         )
     )
 

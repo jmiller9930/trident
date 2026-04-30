@@ -1019,28 +1019,22 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 
 **Directive intent:** Enforce **backend-authoritative file locks** in the Trident IDE: no governed edit without **`POST /api/v1/locks/acquire`** success; validate ownership during editing; release via **`POST /api/v1/locks/release`**; visible lock state / rejection UX; Git awareness (diff/dirty/branch) per §9.
 
-**Backend today (100E — unchanged surface for acquire/release):**
+**Backend (100E + 100P Step 3):**
 
 | Endpoint | Role |
 |----------|------|
-| **`POST /api/v1/locks/acquire`** | **`LockAcquireRequest`**: `project_id`, `directive_id`, `agent_role`, `user_id`, `file_path` (relative; normalized server-side) |
-| **`POST /api/v1/locks/release`** | Matching identity + path + `lock_id` |
-| **`POST /api/v1/locks/simulated-mutation`** | Governed mutation pipeline (out of scope for bare edit gate MVP) |
+| **`GET /api/v1/locks/active`** | Read-only active lock for **`project_id`** + relative **`file_path`** (respects **`expires_at`**) |
+| **`POST /api/v1/locks/acquire`** | Unchanged request shape; optional **`TRIDENT_LOCK_TTL_SEC`** sets **`expires_at`** |
+| **`POST /api/v1/locks/release`** | Unchanged |
+| **`POST /api/v1/locks/simulated-mutation`** | Unchanged semantics; stale TTL rows expired before lock lookup |
 
-**Observations:**
-
-- **`file_locks.expires_at`** exists but **`LockService.acquire`** does not set TTL yet — “expiration” tests may require either **(a)** setting **`expires_at`** in service + enforcing in read path, or **(b)** defining “expiry” as **RELEASED / superseded** only until TTL is productized.
-- **No read-only “active lock for path” API** — IDE cannot poll server truth without **`GET`** (or repeating acquire and treating 409 as “held by other”). A minimal **`GET /api/v1/locks/active`** (or **`HEAD`** semantics) is strongly indicated for **verify during edit** / **auto-refresh** without side effects.
-- **Project / user identity:** Lock APIs require **UUID** `project_id` and `user_id`. The extension today has **`trident.apiBaseUrl`** only — **100P** must add workspace settings (or server lookup) for **`projectId`**, **`userId`**, and **`agentRole`** (e.g. **`USER`**) aligned with backend **`users`/`projects`** rows.
-- **Git awareness §9:** There is **no** **`GET /api/v1/git/status`** in the API slice used by **100U**. Options: **(1)** VS Code **`vscode.git`** API for **display-only** branch/dirty hints with explicit banner that **lock authority is backend**; **(2)** add a **narrow read-only** backend git snapshot endpoint in **100P** Step 3 if architect requires server-sourced diff only.
-
-**FIX 001 (Write Gate):** Requires **design decision** documenting enforcement mechanism and **residual bypass risk** (OS/external editors). **100P** Step 3 should deliver that decision + implement **extension-level** interception as baseline.
+**Identity / Git:** Extension settings **`trident.projectId`**, **`trident.userId`**, **`trident.agentRole`**; **no** backend Git status API in **100P** (architect constraint). **FIX 001:** Hybrid interception — **`README`** documents residual bypass (shell/external editors outside VS Code).
 
 ---
 
 ### Step 2 — Plan (engineering)
 
-**Directive: `100P_PLAN` · Status: `READY`** — log receipt **`7ff7a7d`** (pending architect **ACK** before Step 3 Build)
+**Directive: `100P_PLAN` · Status: `ACCEPTED`** — log **`7ff7a7d`** / **`b35df98`**; architect-approved **`GET /active`**, optional TTL, no Git API / no VFS / no router-agent-memory drift.
 
 **FIX 001 — chosen approach (baseline):** **Hybrid (1+2 lite)** — primary: **VS Code extension document change interception** via **`onWillSaveTextDocument`** (block save) + **`onDidChangeTextDocument`** / **`WorkspaceEdit`** rollback for **governed** files when lock invalid (best-effort; cannot defeat `echo >> file` outside VS Code). Document **cannot-prevent** paths (external processes, other workspaces). Defer **virtual FileSystemProvider** / **Code-OSS fork** to future unless architect escalates.
 
@@ -1066,7 +1060,17 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 
 **Explicit non-goals for Step 3 (unless architect expands):** No change to **simulated-mutation** semantics; no **memory/router** coupling; no replacing **PostgreSQL** lock rows with local-only state.
 
-**`100P_PLAN` → `BLOCKED` triggers:** Architect forbids **any** new **`GET`** lock endpoint (would force acquire-probe pattern); or mandates **virtual FS** only without phased plan.
+---
+
+### Step 3 — Build (engineering) — **PASS**
+
+- **Backend:** **`GET /api/v1/locks/active`**; **`find_active_lock`** filters expired locks; **`TRIDENT_LOCK_TTL_SEC`** (`Settings.lock_ttl_sec`) optional on acquire; **`_expire_stale_locks_for_path`** releases TTL-expired rows (**`LOCK_RELEASED`** payload **`ttl_expired`**) before acquire / simulated mutation; **`get_settings_dep(Request)`** resolves **`app.state.settings_ref`** for **`build_app(cfg)`** parity.
+- **Tests:** **`tests/test_locks_active_100p.py`**; **`pytest` 83 passed**.
+- **Extension:** **`src/locking/lockClient.ts`**, **`lockInterceptor.ts`**, **`src/editors/editGuard.ts`** — **`onWillSave`** blocks save without valid lock; debounced **`onDidChange`** rollback; **`trident.acquireLock` / `trident.releaseLock`**; governance **`OutputChannel`**.
+
+**Directive: `100P` · Status: `PASS`** — proof commit TBD on **`main`**.
+
+**Next:** **100M** — IDE patch + apply — per manifest (**FIX 001** may still require explicit closure artifacts).
 
 ---
 

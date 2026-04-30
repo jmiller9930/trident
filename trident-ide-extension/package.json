@@ -18,6 +18,26 @@
           "type": "string",
           "default": "http://127.0.0.1:8000",
           "description": "Trident API origin (no trailing slash). Paths /api/health and /api/v1 are appended."
+        },
+        "trident.projectId": {
+          "type": "string",
+          "default": "",
+          "description": "Backend project UUID (required for lock governance)."
+        },
+        "trident.userId": {
+          "type": "string",
+          "default": "",
+          "description": "Backend user UUID (must match lock holder)."
+        },
+        "trident.agentRole": {
+          "type": "string",
+          "default": "USER",
+          "description": "Agent role sent with lock APIs (e.g. USER, ENGINEER)."
+        },
+        "trident.editGovernanceEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "When true and project/user IDs are set, enforce backend locks for workspace files (100P)."
         }
       }
     },
@@ -58,6 +78,14 @@
       {
         "command": "trident.selectDirective",
         "title": "Trident: Select directive"
+      },
+      {
+        "command": "trident.acquireLock",
+        "title": "Trident: Acquire lock for active file"
+      },
+      {
+        "command": "trident.releaseLock",
+        "title": "Trident: Release lock for active file"
       }
     ]
   },

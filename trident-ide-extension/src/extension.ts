@@ -1,12 +1,14 @@
 import * as vscode from "vscode";
 import { TridentClient } from "./api/tridentClient";
-import { getApiBaseUrl } from "./utils/config";
+import { registerEditGuard } from "./editors/editGuard";
 import { openChatPanel } from "./panels/chatPanel";
 import { TridentSidebarProvider } from "./sidebar/tridentSidebar";
+import { getApiBaseUrl } from "./utils/config";
 
 export function activate(context: vscode.ExtensionContext): void {
   const client = new TridentClient(getApiBaseUrl());
   const sidebar = new TridentSidebarProvider(client);
+  registerEditGuard(context, client);
 
   context.subscriptions.push(
     vscode.window.registerTreeDataProvider("trident.sidebar", sidebar),

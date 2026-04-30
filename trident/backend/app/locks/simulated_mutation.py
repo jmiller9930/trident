@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.git import git_service
 from app.locks.exceptions import GitValidationError
-from app.locks.lock_service import normalize_relative_file_path
+from app.locks.lock_service import LockService, normalize_relative_file_path
 from app.locks.lock_validator import assert_strict_lock_ownership, get_active_lock_or_raise
 from app.models.directive import Directive
 from app.models.enums import AuditActorType, AuditEventType, ProofObjectType
@@ -44,6 +44,7 @@ class SimulatedMutationPipeline:
 
         repo_root = Path(project.allowed_root_path).expanduser().resolve()
         fp = normalize_relative_file_path(relative_file_path)
+        LockService(self._session)._expire_stale_locks_for_path(project_id=project_id, fp=fp)
 
         try:
             _resolved, branch, porcelain = git_service.validate_repo_and_paths(

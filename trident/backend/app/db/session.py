@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from typing import Annotated
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -31,7 +31,11 @@ def get_db_session_factory(cfg: Settings) -> sessionmaker[Session]:
     return session_factory_for_settings(cfg)
 
 
-def get_settings_dep() -> Settings:
+def get_settings_dep(request: Request) -> Settings:
+    """Prefer `app.state.settings_ref` from `build_app(cfg)` so tests/overrides see the same cfg."""
+    ref = getattr(request.app.state, "settings_ref", None)
+    if isinstance(ref, Settings):
+        return ref
     return app_settings
 
 

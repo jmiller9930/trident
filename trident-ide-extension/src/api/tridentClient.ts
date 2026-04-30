@@ -16,6 +16,25 @@ export interface IdeChatResponse {
   proof_object_id: string;
 }
 
+export interface ActiveLockInfo {
+  lock_id: string;
+  project_id: string;
+  directive_id: string;
+  file_path: string;
+  locked_by_user_id: string;
+  locked_by_agent_role: string;
+  lock_status: string;
+  expires_at: string | null;
+}
+
+export interface LockAcquireResponseBody {
+  lock_id: string;
+  project_id: string;
+  directive_id: string;
+  file_path: string;
+  lock_status: string;
+}
+
 export class TridentClient {
   constructor(private readonly apiOrigin: string = getApiBaseUrl()) {}
 
@@ -79,6 +98,62 @@ export class TridentClient {
       throw new Error(`memory: HTTP ${res.status}`);
     }
     return res.json();
+  }
+
+  async getActiveLock(projectId: string, relativeFilePath: string): Promise<ActiveLockInfo | null> {
+    const params = new URLSearchParams({
+      project_id: projectId,
+      file_path: relativeFilePath,
+    });
+    const res = await fetch(`${this.v1Url("/locks/active")}?${params.toString()}`, {
+      headers: { Accept: "application/json" },
+    });
+    if (res.status === 404) {
+      return null;
+    }
+    if (!res.ok) {
+      throw new Error(`locks/active: HTTP ${res.status} ${await res.text()}`);
+    }
+    return (await res.json()) as ActiveLockInfo;
+  }
+
+  async acquireLock(body: {
+    project_id: string;
+    directive_id: string;
+    agent_role: string;
+    user_id: string;
+    file_path: string;
+  }): Promise<LockAcquireResponseBody> {
+    const res = await fetch(this.v1Url("/locks/acquire"), {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(`locks/acquire: HTTP ${res.status} ${text}`);
+    }
+    return JSON.parse(text) as LockAcquireResponseBody;
+  }
+
+  async releaseLock(body: {
+    lock_id: string;
+    project_id: string;
+    directive_id: string;
+    agent_role: string;
+    user_id: string;
+    file_path: string;
+  }): Promise<{ lock_id: string; lock_status: string }> {
+    const res = await fetch(this.v1Url("/locks/release"), {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(`locks/release: HTTP ${res.status} ${text}`);
+    }
+    return JSON.parse(text) as { lock_id: string; lock_status: string };
   }
 
   async postIdeChat(directiveId: string, prompt: string): Promise<IdeChatResponse> {

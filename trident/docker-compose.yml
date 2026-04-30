@@ -66,6 +66,7 @@ services:
       TRIDENT_CHROMA_PORT: "8000"
       TRIDENT_BASE_PATH: ${TRIDENT_BASE_PATH:-}
       TRIDENT_PUBLIC_BASE_URL: ${TRIDENT_PUBLIC_BASE_URL:-}
+      TRIDENT_LOCK_TTL_SEC: ${TRIDENT_LOCK_TTL_SEC:-0}
     depends_on:
       trident-db:
         condition: service_healthy
