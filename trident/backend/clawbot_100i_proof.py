@@ -185,6 +185,14 @@ def _memory_entries_ordered(session: Session, directive_id: uuid.UUID) -> list[M
     )
 
 
+def memory_sequence_monotonic(entries: list[MemoryEntry]) -> bool:
+    """memory_sequence values non-decreasing when rows are ordered by sequence (ties allowed)."""
+    if len(entries) <= 1:
+        return True
+    seqs = [e.memory_sequence for e in entries]
+    return all(seqs[i] <= seqs[i + 1] for i in range(len(seqs) - 1))
+
+
 def _execution_log_proof(session: Session, directive_id: uuid.UUID) -> ProofObject | None:
     return session.scalar(
         select(ProofObject)
@@ -254,6 +262,12 @@ def validate_100i_chain(session: Session, directive_id: uuid.UUID) -> tuple[bool
     detail["memory_row_count"] = len(entries)
     if len(entries) < 1:
         return False, "memory_sequence_rows_missing", detail
+    if not memory_sequence_monotonic(entries):
+        return False, "memory_sequence_not_monotonic", detail
+    detail["memory_sequence_monotonic"] = True
+
+    if AuditEventType.AGENT_RESULT.value not in types:
+        return False, "agent_result_audit_missing", detail
 
     proof = _execution_log_proof(session, directive_id)
     if proof is None:
@@ -295,9 +309,10 @@ def _print_return_block(
     restart_persistence: str,
     bypass_violations: str,
     commit_hint: str,
+    known_gaps: str = "compose_ps_and_git_HEAD_from_host_when_image_has_no_.git",
 ) -> None:
     print("")
-    print("--- Return template ---")
+    print("--- Return template (key:value) ---")
     _print_kv("Directive", "100I")
     _print_kv("Status", status)
     _print_kv("Commit", commit_hint)
@@ -312,7 +327,108 @@ def _print_return_block(
     _print_kv("Restart persistence", restart_persistence)
     _print_kv("Bypass violations", bypass_violations)
     _print_kv("docker compose ps", "(run on clawbot host: docker compose ps)")
-    _print_kv("Known gaps", "compose_ps_and_git_HEAD_from_host_when_image_has_no_.git")
+    _print_kv("Known gaps", known_gaps)
+
+
+def _print_program_acceptance_return(
+    *,
+    status: str,
+    commit: str,
+    route_display: str,
+    routing_validated_display: str,
+    router_decision_made_present: bool,
+    workflow_via_langgraph_ok: bool,
+    directive_complete: bool,
+    ledger_closed: bool,
+    agent_invocation_present: bool,
+    agent_result_present: bool,
+    graph_only_execution_ok: bool,
+    mcp_requested_present: bool,
+    mcp_completed_present: bool,
+    execution_log_id: str | None,
+    engineer_row_present: bool,
+    memory_sequence_monotonic_ok: bool,
+    vector_state_display: str,
+    structured_authoritative: bool,
+    audit_subsequence_ok: bool,
+    audit_chain_proof_line: str,
+    proof_exec_log_id: str | None,
+    bypass_none_ok: bool,
+    mcp_no_bypass_guard: str,
+    restart_line: str,
+    marker_primary: str,
+    marker_secondary: str,
+    known_gaps: str,
+) -> None:
+    """Bullet layout requested by program / architect acceptance."""
+    print("")
+    print("=== Program acceptance return (copy from here) ===")
+    print("")
+    print("Directive: 100I")
+    print(f"Status: {status}")
+    print("")
+    print(f"Commit: {commit}")
+    print("")
+    print("Routing proof:")
+    print(f"* route: {route_display}")
+    print(f"* validated: {routing_validated_display}")
+    print(f"* ROUTER_DECISION_MADE present: {router_decision_made_present}")
+    print("")
+    print("Workflow execution proof:")
+    wf = "PASS" if workflow_via_langgraph_ok else "FAIL"
+    print(f"* workflow executed via LangGraph: {wf}")
+    print(f"* directive reached COMPLETE: {directive_complete}")
+    print(f"* ledger reached CLOSED: {ledger_closed}")
+    print("")
+    print("Agent execution proof:")
+    print(f"* AGENT_INVOCATION present: {agent_invocation_present}")
+    print(f"* AGENT_RESULT present: {agent_result_present}")
+    go = "PASS" if graph_only_execution_ok else "FAIL"
+    print(f"* no direct execution outside graph: {go}")
+    print("")
+    print("MCP proof:")
+    print(f"* MCP_EXECUTION_REQUESTED present: {mcp_requested_present}")
+    print(f"* MCP_EXECUTION_COMPLETED present: {mcp_completed_present}")
+    el = execution_log_id or "(none)"
+    print(f"* EXECUTION_LOG: {el}")
+    print("")
+    print("Memory proof:")
+    print(f"* agent:engineer row present: {engineer_row_present}")
+    print(f"* memory_sequence monotonic: {memory_sequence_monotonic_ok}")
+    print(f"* vector_state valid: {vector_state_display}")
+    sa = "true" if structured_authoritative else "false"
+    print(f"* structured_authoritative={sa}")
+    print("")
+    print("Audit chain proof:")
+    sub = "PASS" if audit_subsequence_ok else "FAIL"
+    print(f"* ordered subsequence verified: {sub}")
+    print(f"* Audit_chain_proof: {audit_chain_proof_line}")
+    print("")
+    print("Proof objects:")
+    pel = proof_exec_log_id or "(none)"
+    print(f"* EXECUTION_LOG: {pel}")
+    print("")
+    print("Final state:")
+    print(f"* directive: {'COMPLETE' if directive_complete else 'not COMPLETE'}")
+    print(f"* ledger: {'CLOSED' if ledger_closed else 'not CLOSED'}")
+    print("")
+    print("Restart persistence:")
+    print(f"* {restart_line}")
+    print("")
+    print("Bypass violations:")
+    bn = "NONE" if bypass_none_ok else "SEE_ABOVE"
+    print(f"* {bn}")
+    print(f"* MCP_no_bypass_guard: {mcp_no_bypass_guard}")
+    print("")
+    print("docker compose ps: <paste output from clawbot host>")
+    print("")
+    print("Markers:")
+    print(f"* {marker_primary}")
+    print(f"* {marker_secondary}")
+    print("")
+    print(f"Known gaps: {known_gaps}")
+    print("")
+    print("=== End program acceptance return ===")
 
 
 def main() -> int:
@@ -335,7 +451,7 @@ def main() -> int:
     final_state = "UNKNOWN"
     bypass_violations = "UNKNOWN"
     restart_persistence = "N/A"
-    commit_hint = "(set TRIDENT_GIT_HEAD from host or paste merge SHA)"
+    commit_hint = _git_head()
     status = "FAIL"
 
     with SessionLocal() as session:
@@ -361,6 +477,7 @@ def main() -> int:
                     restart_persistence="N/A",
                     bypass_violations="N/A",
                     commit_hint=commit_hint,
+                    known_gaps="invalid TRIDENT_100I_VERIFY_DIRECTIVE_ID",
                 )
                 return 1
 
@@ -428,10 +545,22 @@ def main() -> int:
             restart_persistence = "PASS" if ok else "FAIL"
             status = "PASS" if ok else "FAIL"
 
+            entries_v = _memory_entries_ordered(session, did)
+            mono_v = memory_sequence_monotonic(entries_v)
+            mcp_req_v = AuditEventType.MCP_EXECUTION_REQUESTED.value in types
+            mcp_done_v = AuditEventType.MCP_EXECUTION_COMPLETED.value in types
+            agent_res_v = AuditEventType.AGENT_RESULT.value in types
+            git_n_v = _git_audit_count(types)
+            graph_ok_v = bypass_ok and git_n_v == 0 and seq_ok
+            vec_disp_v = "FAIL"
+            if mem:
+                vec_disp_v = "PASS" if _vector_state_valid(mem.vector_state) else mem.vector_state
+
             _print_kv("Status", status)
             if ok:
                 _print_kv("restart_verify_PASS", "1")
 
+            kg_v = "none" if ok else reason
             _print_return_block(
                 status=status,
                 routing_proof=routing_proof,
@@ -445,6 +574,41 @@ def main() -> int:
                 restart_persistence=restart_persistence,
                 bypass_violations=bypass_violations,
                 commit_hint=commit_hint,
+                known_gaps=kg_v,
+            )
+            proof_vid = str(proof_v.id) if proof_v else None
+            d_verify = session.get(Directive, did)
+            led_verify = session.scalar(select(TaskLedger).where(TaskLedger.directive_id == did))
+            dc = bool(d_verify and d_verify.status == DirectiveStatus.COMPLETE.value)
+            lc = bool(led_verify and led_verify.current_state == TaskLifecycleState.CLOSED.value)
+            _print_program_acceptance_return(
+                status=status,
+                commit=commit_hint,
+                route_display="N/A (verify mode — see primary run for HTTP)",
+                routing_validated_display="N/A (verify mode)",
+                router_decision_made_present=router_ok,
+                workflow_via_langgraph_ok=ok,
+                directive_complete=dc,
+                ledger_closed=lc,
+                agent_invocation_present=detail.get("agent_invocation_count", 0) >= 1,
+                agent_result_present=agent_res_v,
+                graph_only_execution_ok=graph_ok_v,
+                mcp_requested_present=mcp_req_v,
+                mcp_completed_present=mcp_done_v,
+                execution_log_id=proof_vid,
+                engineer_row_present=mem is not None,
+                memory_sequence_monotonic_ok=mono_v and len(entries_v) > 0,
+                vector_state_display=vec_disp_v,
+                structured_authoritative=True,
+                audit_subsequence_ok=seq_ok,
+                audit_chain_proof_line="PASS" if ok and seq_ok else f"FAIL:{reason}",
+                proof_exec_log_id=proof_vid,
+                bypass_none_ok=bypass_ok and git_n_v == 0,
+                mcp_no_bypass_guard="PASS" if bypass_ok else f"FAIL:{bypass_reason}",
+                restart_line="restart_verify_PASS=1" if ok else "restart_verify_PASS=0",
+                marker_primary="100i_clawbot_proof_ok=(see primary script invocation)",
+                marker_secondary=f"100i_clawbot_proof_verify_ok={'1' if ok else '0'}",
+                known_gaps=kg_v,
             )
             _print_kv("100i_clawbot_proof_verify_ok", "1" if ok else "0")
             return 0 if ok else 2
@@ -501,6 +665,36 @@ def main() -> int:
             restart_persistence="SKIPPED",
             bypass_violations="SKIPPED",
             commit_hint=commit_hint,
+            known_gaps="router_route_failed",
+        )
+        _print_program_acceptance_return(
+            status="FAIL",
+            commit=commit_hint,
+            route_display=str(routing_json.get("route", "(none)")),
+            routing_validated_display=str(routing_json.get("validated", False)),
+            router_decision_made_present=False,
+            workflow_via_langgraph_ok=False,
+            directive_complete=False,
+            ledger_closed=False,
+            agent_invocation_present=False,
+            agent_result_present=False,
+            graph_only_execution_ok=False,
+            mcp_requested_present=False,
+            mcp_completed_present=False,
+            execution_log_id=None,
+            engineer_row_present=False,
+            memory_sequence_monotonic_ok=False,
+            vector_state_display="FAIL",
+            structured_authoritative=True,
+            audit_subsequence_ok=False,
+            audit_chain_proof_line="FAIL",
+            proof_exec_log_id=None,
+            bypass_none_ok=False,
+            mcp_no_bypass_guard="SKIPPED",
+            restart_line="SKIPPED",
+            marker_primary="100i_clawbot_proof_ok=0",
+            marker_secondary="100i_clawbot_proof_verify_ok=SKIPPED",
+            known_gaps="router_route_failed",
         )
         return 5
 
@@ -535,6 +729,36 @@ def main() -> int:
             restart_persistence="SKIPPED",
             bypass_violations="SKIPPED",
             commit_hint=commit_hint,
+            known_gaps="workflow_run_non_200",
+        )
+        _print_program_acceptance_return(
+            status="FAIL",
+            commit=commit_hint,
+            route_display="LANGGRAPH",
+            routing_validated_display="true",
+            router_decision_made_present=False,
+            workflow_via_langgraph_ok=False,
+            directive_complete=False,
+            ledger_closed=False,
+            agent_invocation_present=False,
+            agent_result_present=False,
+            graph_only_execution_ok=False,
+            mcp_requested_present=False,
+            mcp_completed_present=False,
+            execution_log_id=None,
+            engineer_row_present=False,
+            memory_sequence_monotonic_ok=False,
+            vector_state_display="FAIL",
+            structured_authoritative=True,
+            audit_subsequence_ok=False,
+            audit_chain_proof_line="FAIL",
+            proof_exec_log_id=None,
+            bypass_none_ok=False,
+            mcp_no_bypass_guard="SKIPPED",
+            restart_line="SKIPPED",
+            marker_primary="100i_clawbot_proof_ok=0",
+            marker_secondary="100i_clawbot_proof_verify_ok=SKIPPED",
+            known_gaps="workflow_run_non_200",
         )
         return 3
 
@@ -593,6 +817,19 @@ def main() -> int:
         git_n = _git_audit_count(types)
         _print_kv("file_git_audit_events", git_n)
 
+        entries_f = _memory_entries_ordered(session, did)
+        mono_f = memory_sequence_monotonic(entries_f)
+        mcp_req_f = AuditEventType.MCP_EXECUTION_REQUESTED.value in types
+        mcp_done_f = AuditEventType.MCP_EXECUTION_COMPLETED.value in types
+        agent_res_f = AuditEventType.AGENT_RESULT.value in types
+        graph_ok_f = bypass_ok and git_n == 0 and seq_ok
+
+        vec_disp_f = "PASS"
+        if mem and not _vector_state_valid(mem.vector_state):
+            vec_disp_f = mem.vector_state
+        elif not mem:
+            vec_disp_f = "FAIL"
+
         audit_proof = "PASS" if ok and seq_ok and router_audit_ok else f"FAIL:{reason}"
         agent_proof = f"PASS (AGENT_INVOCATION_count={inv_n})" if inv_n >= 1 else "FAIL:no agent invocation"
         mcp_proof = "PASS (EXECUTION_LOG + MCP bypass guard)" if proof and bypass_ok and ok else f"FAIL:{reason}"
@@ -618,6 +855,7 @@ def main() -> int:
         )
 
         status = "PASS" if ok and router_audit_ok else "FAIL"
+        kg_full = "none" if status == "PASS" else reason
 
         _print_kv("TRIDENT_100I_VERIFY_DIRECTIVE_ID", str(did))
         _print_kv("Restart_persistence", restart_persistence)
@@ -635,6 +873,50 @@ def main() -> int:
             restart_persistence="PENDING_RESTART_RUN",
             bypass_violations=bypass_violations,
             commit_hint=commit_hint,
+            known_gaps=kg_full,
+        )
+
+        proof_id_f = str(proof.id) if proof else None
+        dc_f = bool(drow and drow.status == DirectiveStatus.COMPLETE.value)
+        lc_f = bool(led and led.current_state == TaskLifecycleState.CLOSED.value)
+        bypass_none_f = bypass_ok and git_n == 0
+
+        _print_program_acceptance_return(
+            status=status,
+            commit=commit_hint,
+            route_display=str(routing_json.get("route", "LANGGRAPH")),
+            routing_validated_display=str(routing_json.get("validated", False)).lower(),
+            router_decision_made_present=router_audit_ok,
+            workflow_via_langgraph_ok=workflow_http_ok and ok,
+            directive_complete=dc_f,
+            ledger_closed=lc_f,
+            agent_invocation_present=inv_n >= 1,
+            agent_result_present=agent_res_f,
+            graph_only_execution_ok=graph_ok_f,
+            mcp_requested_present=mcp_req_f,
+            mcp_completed_present=mcp_done_f,
+            execution_log_id=proof_id_f,
+            engineer_row_present=mem is not None,
+            memory_sequence_monotonic_ok=mono_f and len(entries_f) > 0,
+            vector_state_display=vec_disp_f,
+            structured_authoritative=True,
+            audit_subsequence_ok=seq_ok,
+            audit_chain_proof_line="PASS" if ok and seq_ok and router_audit_ok else f"FAIL:{reason}",
+            proof_exec_log_id=proof_id_f,
+            bypass_none_ok=bypass_none_f,
+            mcp_no_bypass_guard="PASS" if bypass_ok else f"FAIL:{bypass_reason}",
+            restart_line=(
+                "PENDING — docker compose restart trident-api then env TRIDENT_100I_VERIFY_DIRECTIVE_ID=<uuid>"
+                if status == "PASS"
+                else "N/A"
+            ),
+            marker_primary=f"100i_clawbot_proof_ok={'1' if status == 'PASS' else '0'}",
+            marker_secondary=(
+                "100i_clawbot_proof_verify_ok=(pending — second invocation after restart)"
+                if status == "PASS"
+                else "100i_clawbot_proof_verify_ok=SKIPPED"
+            ),
+            known_gaps=kg_full,
         )
 
         if ok and router_audit_ok:

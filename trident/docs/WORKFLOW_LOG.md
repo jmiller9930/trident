@@ -816,7 +816,7 @@ Bypass violations:
 
 ### RUN ORDER — 100I CLAWBOT PROOF
 
-Script: **`trident/backend/clawbot_100i_proof.py`** (API image). Validates **Router** (`POST …/router/route` → **ROUTER_DECISION_MADE**) → **`workflow/run`** → agent/MCP/memory/audit/proof chain + restart verify.
+Script: **`trident/backend/clawbot_100i_proof.py`** (API image). Validates **Router** (`POST …/router/route` → **ROUTER_DECISION_MADE**) → **`workflow/run`** → agent/MCP/memory/audit/proof chain + restart verify. On success the script prints **`=== Program acceptance return (copy from here) ===`** with the bullet checklist (**Routing / Workflow / Agent / MCP / Memory / Audit / Proof objects / Final state / Restart / Bypass / Markers / Known gaps**) matching program acceptance; paste **both** primary + verify invocations for full marker evidence.
 
 ```bash
 ssh jmiller@clawbot.a51.corp
