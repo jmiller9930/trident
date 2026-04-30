@@ -406,4 +406,60 @@ SSH adapter remains stub; MEDIUM “optional approval” not modeled as separate
 
 ---
 
+## Directive: 100F_FINAL — Clawbot HTTP + DB + restart
+
+**Status:** PENDING (operator must run on clawbot; see script output for PASS/FAIL)
+
+### Plan
+
+Final validation: all MCP calls over HTTP to `http://localhost:8000/trident/api/v1/mcp/...` (with `TRIDENT_BASE_PATH=/trident`); DB receipt counts; `docker compose restart trident-api` then re-run LOW execute.
+
+### Plan Decision
+
+**ACCEPTED** — program requires clawbot proof before **100G**; no router work.
+
+### Build Summary
+
+- `clawbot_100f_final_validation.py` — full phase: DB bootstrap directive, HTTP classify/LOW/HIGH-reject/HIGH-ok, assert 3× `EXECUTION_LOG` proofs, 3× `MCP_EXECUTION_REQUESTED`, 2× `MCP_EXECUTION_COMPLETED`, 1× `MCP_EXECUTION_REJECTED`.
+- `--phase restart-low` with `TRIDENT_100F_DIRECTIVE_ID` / `TRIDENT_100F_TASK_ID` after API restart.
+- `agent_role` accepted case-insensitively (e.g. `engineer` → `ENGINEER`) for architect curl examples.
+
+### Files Changed
+
+`trident/backend/clawbot_100f_final_validation.py`, `trident/backend/app/mcp/mcp_validator.py`, `trident/backend/tests/test_mcp_100f.py`, `trident/backend/Dockerfile`.
+
+### Commands Run (CI / dev)
+
+`python3 -m pytest` — full suite **62 passed**.
+
+### Clawbot (operator)
+
+```bash
+ssh jmiller@clawbot.a51.corp
+cd ~/code_projects/trident/trident/trident
+git pull origin main
+docker compose down
+docker compose up -d --build
+docker compose exec trident-api python -m alembic current
+docker compose exec trident-api python clawbot_100f_final_validation.py
+docker compose restart trident-api
+# then use printed export + restart-low command
+```
+
+Curl samples (replace UUIDs from script output): `POST .../trident/api/v1/mcp/classify` and `/execute` as in program message.
+
+### Gate Decision
+
+**PENDING** until clawbot run shows `100f_final_validation_ok=1` and `100f_final_restart_low_ok=1`.
+
+### Final State
+
+When PASS: **100F** closed for deployment target; **100G** still blocked until program explicitly enables.
+
+### Known Gaps
+
+Local engineering host may lack Docker/SSH to clawbot; final sign-off is on **clawbot** only.
+
+---
+
 END

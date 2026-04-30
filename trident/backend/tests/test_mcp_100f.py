@@ -156,6 +156,21 @@ def test_mcp_package_has_no_subprocess_execution_path() -> None:
     assert "os.system" not in text
 
 
+def test_mcp_agent_role_case_insensitive(client: TestClient, db_session: Session, minimal_project_ids: dict[str, uuid.UUID]) -> None:
+    did, tid = _directive_and_task(db_session, minimal_project_ids)
+    res = client.post(
+        "/api/v1/mcp/classify",
+        json={
+            "directive_id": str(did),
+            "task_id": str(tid),
+            "agent_role": "engineer",
+            "command": "pytest",
+            "target": "local",
+        },
+    )
+    assert res.status_code == 200
+
+
 def test_mcp_invalid_target(client: TestClient, db_session: Session, minimal_project_ids: dict[str, uuid.UUID]) -> None:
     did, tid = _directive_and_task(db_session, minimal_project_ids)
     res = client.post("/api/v1/mcp/classify", json=_ctx(did, tid, command="pytest", target="/bin/bash"))

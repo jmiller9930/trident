@@ -19,8 +19,9 @@ def normalize_target(raw: str) -> str:
 
 
 def validate_agent_role(raw: str) -> str:
+    key = raw.strip().upper()
     try:
-        return AgentRole(raw.strip()).value
+        return AgentRole(key).value
     except ValueError as e:
         raise ValueError("invalid_agent_role") from e
 

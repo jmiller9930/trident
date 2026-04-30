@@ -16,6 +16,7 @@ COPY app ./app
 COPY tests ./tests
 COPY clawbot_100e_proof.py .
 COPY clawbot_100f_proof.py .
+COPY clawbot_100f_final_validation.py .
 COPY docker-healthcheck.sh /usr/local/bin/docker-healthcheck.sh
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-healthcheck.sh /usr/local/bin/docker-entrypoint.sh
