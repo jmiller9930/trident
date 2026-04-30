@@ -42,6 +42,12 @@ Adjust `TRIDENT_PUBLIC_BASE_URL` if you only use HTTP initially.
 
 ## 100A proof on clawbot
 
+Operator-run bundle (logs + curls + restart): from `trident/` after deploy,
+
+```bash
+bash scripts/clawbot-proof-bundle.sh
+```
+
 With prerequisites satisfied:
 
 1. `docker compose build && docker compose up -d`
