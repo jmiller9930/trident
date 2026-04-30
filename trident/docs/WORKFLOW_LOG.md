@@ -995,7 +995,7 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 - **Tests:** **`tests/test_ide_chat_100k.py`**; full **`pytest`** **79 passed**.
 - **Extension:** **`trident-ide-extension/`** — `TridentClient`, activity-bar sidebar, chat webview → **`/api/v1/ide/chat`**, commands for agent/memory JSON and health. **`README.md`** + **`.vscode`** launch/tasks.
 
-**Directive: `100K` · Status: `PASS`** (await architect formal **ACCEPT** if required).
+**Directive: `100K` · Status: `PASS`** — proof **`dc5e2dc`** (await architect formal **ACCEPT** if required).
 
 **Next:** **100P** — IDE file lock + governed edit — per manifest.
 
