@@ -1040,7 +1040,7 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 
 ### Step 2 — Plan (engineering)
 
-**Directive: `100P_PLAN` · Status: `READY`** (pending architect **ACK** before Step 3 Build)
+**Directive: `100P_PLAN` · Status: `READY`** — log receipt **`7ff7a7d`** (pending architect **ACK** before Step 3 Build)
 
 **FIX 001 — chosen approach (baseline):** **Hybrid (1+2 lite)** — primary: **VS Code extension document change interception** via **`onWillSaveTextDocument`** (block save) + **`onDidChangeTextDocument`** / **`WorkspaceEdit`** rollback for **governed** files when lock invalid (best-effort; cannot defeat `echo >> file` outside VS Code). Document **cannot-prevent** paths (external processes, other workspaces). Defer **virtual FileSystemProvider** / **Code-OSS fork** to future unless architect escalates.
 
