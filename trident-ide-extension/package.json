@@ -1,0 +1,73 @@
+{
+  "name": "trident-ide-extension",
+  "displayName": "Trident",
+  "description": "Trident IDE client — backend-connected sidebar, directives, chat (100K)",
+  "version": "0.1.0",
+  "publisher": "trident",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Trident",
+      "properties": {
+        "trident.apiBaseUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8000",
+          "description": "Trident API origin (no trailing slash). Paths /api/health and /api/v1 are appended."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "trident",
+          "title": "Trident",
+          "icon": "media/trident.svg"
+        }
+      ]
+    },
+    "views": {
+      "trident": [
+        {
+          "id": "trident.sidebar",
+          "name": "Explorer"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "trident.refresh",
+        "title": "Trident: Refresh sidebar"
+      },
+      {
+        "command": "trident.openChat",
+        "title": "Trident: Open chat panel"
+      },
+      {
+        "command": "trident.showAgentState",
+        "title": "Trident: Show agent state (JSON)"
+      },
+      {
+        "command": "trident.showStatus",
+        "title": "Trident: Show backend status"
+      },
+      {
+        "command": "trident.selectDirective",
+        "title": "Trident: Select directive"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  }
+}

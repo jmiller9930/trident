@@ -950,19 +950,17 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 
 **Directive intent:** Ship a **VS Code–compatible extension** that is a **thin client** of **trident-api**: configurable base URL, health/reconnect, sidebar summary, **read-only** directive list/detail, **backend-driven** chat (no local LLM / no direct external APIs), agent/router/git-lock **visibility** (read-only; **no file mutation**, **no bypass**).
 
-**Repo today:** **No** `trident-ide-extension/` tree yet — greenfield per §4 layout in **100K**.
+**Repo:** **`trident-ide-extension/`** — VS Code extension (sidebar, chat webview, agent JSON command, health).
 
-**Backend surface already usable (read-mostly):**
+**Backend surface (100K Step 3):**
 
-| Capability | Existing API (prefix = **`{api_router_prefix}`** + **`/v1`**, see **`Settings.api_router_prefix`** / **`TRIDENT_BASE_PATH`**) |
-|------------|-------------------------------------------------------------------------------------------------------------------------------|
-| Health | **`GET /health`** (included on **`api_router`**) |
+| Capability | API |
+|------------|-----|
+| Health | **`GET .../api/health`** |
 | Directives list / detail | **`GET /v1/directives/`**, **`GET /v1/directives/{id}`** |
-| Workflow summary / memory | **`GET /v1/memory/directive/{directive_id}`** (ledger, handoffs, entries, proofs — same pattern as **100U**) |
-| Subsystem router (last decision UX) | **`POST /v1/router/route`** — extension may POST a **classification-only** payload and show **response JSON** as “last router decision” (**no** extra orchestration in IDE) |
-| Locks / Git errors (read-only display) | No **`GET /git/status`** today; **100E** exposes **mutating** lock endpoints. **Read-only** status can mirror **100U**: surface **GIT\_\*** / lock-related context from **memory** proofs and directive detail **where present**, without calling **`POST /v1/locks/*`** in **100K**. |
-
-**Gap vs §5.3 / §7 tests (“chat sends/receives”):** There is **no** first-class **`/v1/.../chat`** or agent completion endpoint today; **Nike** ingest exists (**`POST /v1/nike/events`**) but **`NikeEventType`** currently documents **`DIRECTIVE_CREATED`** only — **no** IDE prompt handler path that returns user-visible text without **Step 3** API/worker work.
+| Memory / ledger view | **`GET /v1/memory/directive/{directive_id}`** |
+| IDE chat (stub) | **`POST /v1/ide/chat`** — deterministic reply; **`IDE_CHAT_REQUEST`** / **`IDE_CHAT_RESPONSE`** audits; **`ProofObjectType.CHAT_LOG`** |
+| Router / locks | Unchanged — extension does **not** call **`POST /v1/router/route`** or **`POST /v1/locks/*`** in this milestone |
 
 **Config:** Directive example **`TRIDENT_API_URL=http://localhost:8000`** — engineering will normalize to **`{TRIDENT_API_URL}{base}/api/v1/...`** matching **`main.build_app`** (**`api_router_prefix`** defaults to **`/api`**; **`TRIDENT_BASE_PATH`** prefixes the app).
 
@@ -972,7 +970,7 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 
 ### Step 2 — Plan (engineering)
 
-**Directive: `100K_PLAN` · Status: `READY`** (pending architect **ACK** before Step 3 Build)
+**Directive: `100K_PLAN` · Status: `ACCEPTED`** (architect — minimal **`POST /api/v1/ide/chat`**, deterministic stub only, auditable, no Nike/router/agent/MCP expansion beyond route above).
 
 **Deliverable layout:** New top-level **`trident-ide-extension/`** (or **`ide-extension/`** under repo root — pick one in Step 3; **100K** diagram uses **`trident-ide-extension/`**) with **`package.json`**, **`src/extension.ts`**, **`src/api/tridentClient.ts`**, **`src/utils/config.ts`** (**`trident.apiBaseUrl`**, **`trident.basePath`** optional), panels + sidebar as specified.
 
@@ -987,9 +985,19 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 
 **Explicit Step 3 non-goals (per §6):** No **`POST /v1/locks/*`**, no file edits, no local OpenAI/Anthropic keys, no mocked JSON fixtures as primary source.
 
-**Proof package (Step 3):** Extension VSIX / **`vsce package`** note; install screenshot; **`curl`** or log snippets for health + directives + chat round-trip; **`pytest`** unchanged unless new API routes added (then extend tests).
+**Proof package (Step 3):** Extension **`README`** + Run Extension host; **`curl`** **`POST /api/v1/ide/chat`**; **`pytest`** includes **`test_ide_chat_100k`**.
 
-**Risk / dependency:** Chat acceptance **depends** on agreeing the **minimal stub API** above — if architect forbids any backend change in **100K**, engineering must return **`100K_PLAN` → `BLOCKED`** and request scope split.
+---
+
+### Step 3 — Build (engineering) — **PASS**
+
+- **Backend:** **`POST /api/v1/ide/chat`** (`app/api/v1/ide.py`, `app/ide/chat_service.py`). **`AuditEventType`:** **`IDE_CHAT_REQUEST`**, **`IDE_CHAT_RESPONSE`**. **`ProofObjectType.CHAT_LOG`**. No Nike/router/MCP/agent behavior changes beyond this route.
+- **Tests:** **`tests/test_ide_chat_100k.py`**; full **`pytest`** **79 passed**.
+- **Extension:** **`trident-ide-extension/`** — `TridentClient`, activity-bar sidebar, chat webview → **`/api/v1/ide/chat`**, commands for agent/memory JSON and health. **`README.md`** + **`.vscode`** launch/tasks.
+
+**Directive: `100K` · Status: `PASS`** (await architect formal **ACCEPT** if required).
+
+**Next:** **100P** — IDE file lock + governed edit — per manifest.
 
 ---
 
