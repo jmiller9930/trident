@@ -1128,9 +1128,7 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 | **A (default)** | Implement **FIX 003** first → then resume **100M**. |
 | **B (override — not preferred)** | Proceed **100M** without **FIX 003** only after **explicit** acceptance of risk: stale locks, ownership edge cases, missing heartbeat/recovery guarantees. |
 
-**Next state:** **`WAITING_FOR_PROGRAM_DECISION (FIX_003 vs WAIVER)`**
-
-Engineering **will not** start **100M** Step 3 until **Option A** is underway **accepted** or **Option B** is **explicitly** authorized in writing.
+**Next state:** **`WAITING_FOR_PROGRAM_DECISION (FIX_003 vs WAIVER)`** — **superseded:** architect issued **FIX_003** (**Option A / best practice**); **100M** stays **BLOCKED** until **FIX_003** is **PASS** / **ACCEPTED**.
 
 **Receipt:** **`a0b89de`** (**W-030**).
 
@@ -1143,7 +1141,66 @@ Engineering **will not** start **100M** Step 3 until **Option A** is underway **
 
 **Non-blocking:** **FIX 001** supplemental artifacts (architect **100P** note).
 
-**To return `100M_PLAN` → `READY`:** Architect **ACK** must either (**a**) accept **FIX 003** implementation order ahead of **100M** Step 3, or (**b**) explicitly **waive** FIX 003-before-100M for this program increment.
+**To return `100M_PLAN` → `READY`:** **FIX_003** complete (**below**) → then **100M** Step 2 replan/ACK per manifest.
+
+---
+
+## Fix directive: **FIX_003** — Lock Heartbeat + Expiration Consistency
+
+**Authoritative file:** **`TRIDENT_FIX_DIRECTIVES_001_005/TRIDENT_FIX_DIRECTIVE_003_LOCK_HEARTBEAT_EXPIRY.md`** · **Depends on:** **000E**, **100E**, **100P** · **Unlocks (gate):** **100M**, **100N**
+
+### Step 1 — Read (engineering) — **COMPLETE**
+
+**Directive requires:** Per-lock **heartbeat timestamp**; clients refresh on an interval; backend marks locks **stale** after **missed-heartbeat threshold**; stale enters **`STALE_PENDING_RECOVERY`**; **policy-based recovery** + owner/admin paths; **audits** for heartbeat, expiry, takeover/recovery/force-release; states **`ACTIVE` / `STALE_PENDING_RECOVERY` / `EXPIRED` / `RELEASED` / `FORCE_RELEASED` / `CONFLICTED`**.
+
+**Repo today (100E / 100P):**
+
+| Topic | Today |
+|-------|--------|
+| **`LockStatus`** | **`ACTIVE`**, **`RELEASED`** only (`app/locks/constants.py`) |
+| **`file_locks`** | **`expires_at`** (optional TTL on acquire); **no** `last_heartbeat_at`; **`lock_status`** string |
+| **Partial unique index** | One row per **`(project_id, file_path)`** among **`ACTIVE`** + **`released_at IS NULL`** |
+| **API** | **`POST .../locks/acquire`**, **`release`**, **`simulated-mutation`**; **`GET .../locks/active`** (100P) |
+
+**Implication:** Heartbeat + stale/recovery **extends** the model (new column(s), new statuses, new routes). **`STALE_PENDING_RECOVERY`** rows **must not** satisfy **`find_active_lock` / editing**; they **should not** participate in the **ACTIVE** partial unique index so a **new `ACTIVE`** lock can appear after takeover policy (see Step 2).
+
+---
+
+### Step 2 — Plan (engineering)
+
+**Directive: `FIX_003_PLAN` · Status: `READY`**
+
+**Architect constraints honored in plan:** **`POST .../locks/acquire`** and **`POST .../locks/release`** **request/response schemas unchanged** (behavior may set **`last_heartbeat_at`** internally on acquire). **No** Git / MCP / agent / router / memory subsurface changes. **Server-authoritative** stale transitions.
+
+**Phase — data model**
+
+1. **Alembic:** Add **`last_heartbeat_at`** (timestamptz, nullable → backfill **`now()`** for existing **`ACTIVE`** rows); extend **`LockStatus`** with **`STALE_PENDING_RECOVERY`**, **`EXPIRED`**, **`FORCE_RELEASED`**, **`CONFLICTED`** (reserve semantics in code comments).
+2. **Partial unique index:** Keep **only** **`lock_status = 'ACTIVE'`** + **`released_at IS NULL`** so **`STALE_*`** rows do not block re-acquire after takeover.
+
+**Phase — heartbeat & staleness**
+
+3. **Settings:** e.g. **`TRIDENT_LOCK_HEARTBEAT_INTERVAL_SEC`** (client hint / logging), **`TRIDENT_LOCK_HEARTBEAT_MISS_SEC`** (server: no heartbeat longer than this ⇒ stale). Document interaction with existing **`TRIDENT_LOCK_TTL_SEC`** (**TTL** = absolute ceiling; **heartbeat** = liveness — both enforced in **`find_active_lock`**).
+4. **`LockService.acquire`:** Initialize **`last_heartbeat_at = now()`** (additive internal field).
+5. **New route **`POST /api/v1/locks/heartbeat`**** — body mirrors **release** identity dimensions (**`lock_id`**, **`project_id`**, **`directive_id`**, **`agent_role`**, **`user_id`**, **`file_path`**) per strict ownership; updates **`last_heartbeat_at`** only when **`ACTIVE`**; **`409`**/`404`** when stale/wrong.
+6. **Stale transition:** Shared **`_ensure_lock_liveness(session, lock_row)`** (or equivalent) invoked from **`find_active_lock`**, **`GET /locks/active`**, **`heartbeat`**, **`acquire`** prelude: if **`ACTIVE`** and missed heartbeat beyond threshold ⇒ set **`STALE_PENDING_RECOVERY`**, set audit **`LOCK_STALE`** (name TBD), optional **`released_at`** policy — **must** align with “safe takeover”: typically **do not** leave **`ACTIVE`** row occupying unique slot after stale (either status flip or release).
+
+**Phase — recovery / takeover / force-release**
+
+7. **Owner recovery:** **`POST /api/v1/locks/release`** — **same JSON** — extend **server behavior** to allow **idempotent / explicit release** from **`STALE_PENDING_RECOVERY`** when ownership matches (**contract-preserving**).
+8. **Takeover (another principal):** After stale, **`acquire`** may succeed for same path — **`_expire_stale_locks_for_path`**-style promotion: transition prior row to **`EXPIRED`** or **`RELEASED`** with audit **`LOCK_TAKEOVER`** / **`LOCK_RECOVERED`** per policy (race-safe with transaction + row lock).
+9. **Force-release:** **`POST /api/v1/locks/force-release`** — minimal **admin gate** (e.g. env allowlist **`TRIDENT_LOCK_FORCE_RELEASE_USER_IDS`** / role placeholder), **`FORCE_RELEASED`** status + audit; **no** MCP/agent/router.
+
+**Phase — audits & visibility**
+
+10. **`AuditEventType`:** add **`LOCK_HEARTBEAT`**, **`LOCK_STALE`**, **`LOCK_RECOVERED`** / **`LOCK_TAKEOVER`**, **`LOCK_FORCE_RELEASED`** (subset as needed for MVP vs §6 tests).
+11. **IDE (extension):** **`setInterval`** heartbeat while **`heldLocks`** map populated; surface stale errors from **`GET /locks/active`** / save guard (**100P** hook).
+12. **Web UI:** Minimal surfacing of stale/active (**GET active** or directives shell) — proof screenshot per §7.
+
+**Phase — tests (FIX 003 §6)**
+
+13. **`pytest`:** heartbeat refresh; missed heartbeat → stale; stale blocks **`find_active_lock`**; owner release from stale; force-release happy path; concurrent acquire race (sqlite + postgres if applicable).
+
+**`FIX_003_PLAN` → `BLOCKED` triggers:** Architect forbids **any** new lock routes (would force impossible heartbeat without changing contracts — unlikely).
 
 ---
 

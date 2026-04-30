@@ -19,7 +19,8 @@
 
 | ID | Directive | Phase | Proof summary (engineering) | Architect decision | Logged |
 |----|-----------|-------|------------------------------|--------------------|--------|
-| W-030 | **100M** | Gate — architect ACK block | Architect **ACCEPT** engineering block; **`100M_PLAN`** **`BLOCKED (CONFIRMED)`**; **`100M`** **`BLOCKED_CONFIRMED`**; **FIX 003** required per **Master Guide v1.1** §5 + **FIX 003** §8; **Option A / B** decision recorded in **`WORKFLOW_LOG.md`** §100M. **Commit:** **`a0b89de`**. | **BLOCKED_CONFIRMED** — **`WAITING_FOR_PROGRAM_DECISION`** | 2026-04-30 |
+| W-031 | **FIX_003** | Phase 2 — Read + Plan | Step 1 Read + Step 2 Plan: heartbeat **`last_heartbeat_at`**, new statuses, **`POST /locks/heartbeat`**, stale lazy transition, recovery/takeover/force-release, audits, IDE/web visibility, tests. **`FIX_003_PLAN` `READY`**. Log: **`WORKFLOW_LOG.md`** §FIX_003. **Commit:** TBD. | **PENDING** — ACK **`FIX_003_PLAN`** | 2026-04-30 |
+| W-030 | **100M** | Gate — architect ACK block | Architect **ACCEPT** engineering block; **`100M`** **`BLOCKED_CONFIRMED`**. **Commit:** **`a0b89de`**. | **BLOCKED_CONFIRMED** — superseded by **FIX_003** issuance (**Option A**) | 2026-04-30 |
 | W-029 | **100M** | Phase 2 — Read + Plan | **Step 1 Read** + **Step 2 Plan:** **`100M`** vs **`simulated-mutation`**; **FIX 003** gate. **Commits:** **`695babc`**, **`19ac3be`**. | Superseded by **W-030** confirmation | 2026-04-30 |
 | W-028 | **100P** / **100P_FINAL** | Step 3 → ACCEPT | **`GET /api/v1/locks/active`** + TTL + IDE governance; **`pytest` 83**. **Commits:** **`565b6ae`**, **`c162fca`**. | **ACCEPTED** — **CLOSED** | 2026-04-30 |
 | W-027 | **100P** | Phase 2 — Read + Plan | Plan delivered; **`100P_PLAN` ACCEPTED**. **Commits:** **`7ff7a7d`**, **`b35df98`**. | Superseded by **W-028** | 2026-04-30 |
