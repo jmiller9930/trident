@@ -57,9 +57,9 @@ The system is governed by these non-negotiable principles:
 ### Foundation Layer
 
 #### TRIDENT-FOUNDATION-v1.0
-**File:** `trident_foundation_v1_0.md`  
+**File:** `docs/archive/trident_foundation_v1_0.md`  
 **Type:** HLD + LLD foundation  
-**Status:** Active foundation baseline  
+**Status:** Archived baseline (v1.1 is canonical in Master Execution Guide)  
 **Purpose:** Defines Trident identity, memory-first architecture, multi-agent workflow, protocol stack, and high-level system boundaries.  
 **Depends on:** Original Project Trident design documentation PDF  
 **Produces:** Foundation for all LLD directives.
