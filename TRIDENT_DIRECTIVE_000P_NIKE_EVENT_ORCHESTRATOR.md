@@ -410,7 +410,7 @@ Recommended implementation order update:
 IDE track remains:
 
 ```text
-100K → 100L → 100M → 100N
+100K → 100P → 100M → 100N
 ```
 
 Fix directive gates remain unchanged unless explicitly updated.

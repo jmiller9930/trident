@@ -658,7 +658,7 @@ Program **ACCEPTED** **100G_FINAL** — subsystem router implementation + clawbo
 - Renamed UI directive: **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100H_UI.md`** → **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100U_UI.md`** (git rename; content updated for **100U**).
 - Added **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100H_AGENT_EXECUTION_LAYER.md`** — **Agent Execution Layer (backend); no UI responsibilities.**
 - Updated **Manifest v1.0**, **Master Execution Guide v1.0 / v1.1**, **Governed Execution Playbook v1.0 / v1.1**, **100G / 100I / 100J / 100K** manifest links, **000P** placement line, **FIX 006** example chain, and **DIRECTIVE_WORKFLOW_LOG** (W-014).
-- Ordering: **100G → 100H (Agents) → 100I → 100J → 100U (UI) → 100K (IDE) → …**
+- Ordering: **100G → 100H (Agents) → 100I → 100J → 100L (Production hardening) → 100U (UI) → 100K (IDE) → 100P → …**
 
 ### Gate Decision
 

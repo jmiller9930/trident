@@ -161,7 +161,7 @@ Engineering must NOT:
 ## 14. Manifest Link
 
 Parent: Trident Manifest v1.0  
-Depends on: **100J** (Deployment + Production Validation)  
+Depends on: **100L** (Production Readiness & Operational Hardening) — after **100J**  
 Unlocks: **100K** — IDE bootstrap (web control plane prerequisite per Master Execution Guide)
 
 ---

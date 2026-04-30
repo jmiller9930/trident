@@ -148,7 +148,7 @@ Nike (**000P**, future implementation **100O**) routes events between workflow s
 ### IDE track (after **100U** + **`000O`** prerequisites per Master Guide)
 
 ```text
-100K → 100L → 100M → 100N
+100K → 100P → 100M → 100N
 ```
 
 ### Fix directives

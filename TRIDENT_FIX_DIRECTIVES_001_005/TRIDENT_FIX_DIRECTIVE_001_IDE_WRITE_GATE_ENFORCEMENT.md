@@ -76,7 +76,7 @@ Engineering must return:
 ## 8. Manifest Link
 
 Parent: Trident Manifest v1.0  
-Depends on: 000O, 100K, 100L  
+Depends on: 000O, 100K, 100P  
 Must be completed before: 100M, 100N
 
 ---

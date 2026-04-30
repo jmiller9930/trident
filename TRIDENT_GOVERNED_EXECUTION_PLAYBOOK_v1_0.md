@@ -145,7 +145,7 @@ REJECTED → fix and resubmit
 ### IDE track (after **100U** + **`000O`** prerequisites per Master Guide v1.1)
 
 ```text
-100K → 100L → 100M → 100N
+100K → 100P → 100M → 100N
 ```
 
 ### Fix directives

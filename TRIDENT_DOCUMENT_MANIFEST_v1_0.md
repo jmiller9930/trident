@@ -193,6 +193,14 @@ The system is governed by these non-negotiable principles:
 **Status:** Issued  
 **Purpose:** **Deployment + production validation** — compose deploy, health, restart durability, persistence, baseline security/logging/runbook; **no** new product features (**000J**, **000M**).  
 **Depends on:** **100I**  
+**Unlocks:** **100L**
+
+#### TRIDENT-IMPLEMENTATION-DIRECTIVE-100L
+**File:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100L_PRODUCTION_HARDENING.md`  
+**Type:** Implementation Directive  
+**Status:** Issued  
+**Purpose:** **Production readiness & operational hardening** — compose stability (restart, limits, ordering), failure handling (DB, Chroma, worker bounds), observability, security baseline, backup/restore, operational runbooks; **no** features, **no** architecture or agent/router/MCP changes, **no** **100R**.  
+**Depends on:** **100J**  
 **Unlocks:** **100U**
 
 #### TRIDENT-IMPLEMENTATION-DIRECTIVE-100U
@@ -200,7 +208,7 @@ The system is governed by these non-negotiable principles:
 **Type:** Implementation Directive  
 **Status:** Issued  
 **Purpose:** Web UI — LangGraph + system state visualization; real backend binding per **000H**.  
-**Depends on:** **100J**  
+**Depends on:** **100L**  
 **Unlocks:** **100K**
 
 #### TRIDENT-IMPLEMENTATION-DIRECTIVE-100R

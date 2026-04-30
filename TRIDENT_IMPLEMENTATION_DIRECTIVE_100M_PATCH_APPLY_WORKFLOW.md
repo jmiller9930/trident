@@ -17,7 +17,7 @@ Covers:
 - Patch generation (diff-based)
 - Patch preview UI
 - Apply / reject workflow
-- Integration with file locks (100L)
+- Integration with file locks (**100P**)
 - Integration with Git status (100E)
 - Backend validation before apply
 - Proof object generation for applied changes
@@ -100,7 +100,7 @@ Must display:
 Before applying:
 
 System must:
-- verify file lock (100L)
+- verify file lock (**100P**)
 - verify Git repo state (100E)
 - verify patch integrity
 - verify directive context
@@ -175,7 +175,7 @@ Engineering must NOT:
 ## 17. Manifest Link
 
 Parent: Trident Manifest v1.0  
-Depends on: 100L  
+Depends on: **100P**  
 Unlocks: 100N — IDE Agent Workflow Integration
 
 ---

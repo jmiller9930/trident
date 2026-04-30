@@ -87,7 +87,7 @@ IDE / Web → Trident API → Nike → LangGraph → Agents / Memory / Subsystem
 ```text
 Schemas + ledger (000A/000B) → LangGraph spine → memory → agents/Git/MCP/router/UI (design in 000C–000H)
 Implementation: runtime skeleton → persistence → graph → memory svc → locks/Git → MCP → router → UI → E2E → deploy
-IDE client (000O): bootstrap → locks → patch/apply → agent workflow (100K–100N), same backend authority
+IDE client (000O): bootstrap → file lock → patch/apply → agent workflow (**100K** → **100P** → **100M** → **100N**), same backend authority
 ```
 
 **Orchestration (000P — Nike):** **000P** defines Nike as the internal event-routing layer between producers (API, UI, IDE, worker, MCP, router, locks) and LangGraph/runtime consumers; product behavior is implemented under **100O**, placed after **100C** in §2–§3. Nike sits **after** the API in the **canonical processing chain** (see “Backend as work-processing authority” above); the API ingests; the worker runs the default Nike dispatcher (**100O**).
@@ -102,12 +102,12 @@ IDE client (000O): bootstrap → locks → patch/apply → agent workflow (100K�
 START HERE
 
 Phase 1 — Core platform:
-100A → 100B → 100C → 100O → 100D → 100E → 100F → 100G → 100H → 100I → 100J → 100U
+100A → 100B → 100C → 100O → 100D → 100E → 100F → 100G → 100H → 100I → 100J → 100L → 100U
 
 **Deferred (program-scheduled):** **100R** — Model Router / local-first external escalation (**000G**). Runs **after** **100G** (subsystem router) is accepted; typically before production reliance on external LLM APIs. See **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100R_MODEL_ROUTER_LOCAL_FIRST.md`**.
 
 Phase 2 — IDE (after **100U** and §4 prerequisites):
-100K → 100L → 100M → 100N
+100K → 100P → 100M → 100N
 ```
 
 **Design authority:** LLD directives **000A–000P** (including **000P — Nike**) and **Manifest v1.0** must be accepted before code tracks **100A+**. **Fix directives 001–005** apply at the injection points in §5—not optional patches.
@@ -132,14 +132,15 @@ Each row lists **prior implementation steps**, **design directives (LLD)** that 
 | **100H** Agent Execution Layer (backend) | **100G** | **000B**, **000F**, **000K** (and refs in **100H** directive) | Subsystem router accepted; LangGraph → MCP → audit path proven |
 | **100I** End-to-end validation | **100H** | **000I** | Agent execution + APIs proven; no mock-as-proof; **subsystem/workflow** proofs only — **no LLM model-router / cadre implementation** (deferred to **100R**); confirm architecture non-blocking for future per-agent profiles |
 | **100J** Deployment + production validation | **100I** | **000J**, **000M** | Full lifecycle test path exists |
-| **100U** Web UI | **100J** | **000H** | Deploy validation passed; panels bind to real APIs |
+| **100L** Production readiness & operational hardening | **100J** | **000J**, **000M** (operational alignment) | Deploy proof complete; hardening scope authorized |
+| **100U** Web UI | **100L** | **000H** | Hardening accepted; panels bind to real APIs |
 | **100K** IDE bootstrap | **100U** | **000O** | Web control plane usable; API stable for IDE |
-| **100L** IDE file lock + governed edit | 100K | **000O** | IDE connects to backend project/registry |
-| **100M** Patch / apply workflow | 100L | **000O** | Governed edit path exists |
+| **100P** IDE file lock + governed edit | 100K | **000O** | IDE connects to backend project/registry |
+| **100M** Patch / apply workflow | 100P | **000O** | Governed edit path exists |
 | **100N** IDE agent workflow | 100M | **000O** | Patch pipeline + MCP surfacing ready |
 
 **Unlock chain (next step only when current phase meets its directive’s acceptance criteria):**  
-100A → 100B → 100C → 100O → 100D → 100E → 100F → 100G → 100H → 100I → 100J → 100U; then 100K → 100L → 100M → 100N.
+100A → 100B → 100C → 100O → 100D → 100E → 100F → 100G → 100H → 100I → 100J → 100L → 100U; then 100K → 100P → 100M → 100N.
 
 ### 3.1 Locating implementation directive files
 
@@ -154,6 +155,8 @@ TRIDENT_IMPLEMENTATION_DIRECTIVE_<STEP>_<TITLE_SLUG>.md
 **Example — 100H:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100H_AGENT_EXECUTION_LAYER.md` — Agent Execution Layer (**backend only**).  
 **Example — 100U:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100U_UI.md` — Web UI.  
 **Example — 100J:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100J_DEPLOYMENT_PRODUCTION_VALIDATION.md` — Deployment + production validation.  
+**Example — 100L:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100L_PRODUCTION_HARDENING.md` — Production readiness & operational hardening (**no** feature work).  
+**Example — 100P:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100P_IDE_FILE_LOCK.md` — IDE file lock + governed edit.  
 Fix directives: under `TRIDENT_FIX_DIRECTIVES_001_005/` or matching `TRIDENT_FIX_DIRECTIVE_<NNN>_*.md`.
 
 ---
@@ -173,8 +176,8 @@ Apply **FIX 001–005** at the following gates. Details remain in each fix docum
 | **FIX 004** — Memory consistency / transaction model | **100D** | **100G**, **100I** | Aligns structured + vector + ledger semantics before router and full integration rely on retrieval. |
 | **FIX 005** — Router confidence + escalation guard | **100R** (Model Router) | Relying on **production external LLM API** routing | Depends on **000G** + **100R**; targets **model** router, not **100G** subsystem router. |
 | **FIX 002** — Git commit governance | **100E** | **100I**, **100J** | Needs Git/file-lock implementation; finish before E2E and deploy validation that assume drift detection. |
-| **FIX 001** — IDE write gate | **100K**, **100L** | **100M**, **100N** | Governed IDE edits before patch/agent workflows. |
-| **FIX 003** — Lock heartbeat + expiry | **100L** (with **100E** foundation) | **100M**, **100N** | Stale-lock behavior before patch/apply and IDE agent flows. |
+| **FIX 001** — IDE write gate | **100K**, **100P** | **100M**, **100N** | Governed IDE edits before patch/agent workflows. |
+| **FIX 003** — Lock heartbeat + expiry | **100P** (with **100E** foundation) | **100M**, **100N** | Stale-lock behavior before patch/apply and IDE agent flows. |
 
 **Suggested ordering within the spine (fixes shown inline):**
 
@@ -184,17 +187,17 @@ Apply **FIX 001–005** at the following gates. Details remain in each fix docum
   → 100E → 100F → 100G (subsystem router)
   → 100H
   → FIX 002 (must complete before 100I)
-  → 100I → 100J → 100U
+  → 100I → 100J → 100L → 100U
   → 100R (when scheduled — Model Router)
   → FIX 005 (before prod external LLM routing)
 
-100K → 100L
+100K → 100P
   → FIX 001
   → FIX 003
   → 100M → 100N
 ```
 
-If **FIX 001** and **FIX 003** share touchpoints (locks + IDE), they may be executed in parallel once **100L** is satisfied; both must finish before **100M**.
+If **FIX 001** and **FIX 003** share touchpoints (locks + IDE), they may be executed in parallel once **100P** is satisfied; both must finish before **100M**.
 
 ---
 
@@ -243,9 +246,10 @@ Abbreviated summary only; **acceptance and proof follow the implementation direc
 | **100R** | Local-first **LLM** routing + logged escalation | Model decision logs | External LLM misuse |
 | **100H** | Agent registry + executor; MCP/memory via sanctioned services only | Audit chain; no subprocess bypass | **100I** blocked |
 | **100I** | E2E lifecycle + failure tests (subsystem router, graph, MCP, memory, audit — **not** LLM cadre routing) | Full audit trail | **100J** blocked |
-| **100J** | Deploy checklist + prod validation | Install/backup/health proof | **100U** blocked |
+| **100J** | Deploy checklist + prod validation | Install/backup/health proof | **100L** blocked |
+| **100L** | Compose/runbook hardening + failure matrix | Proof per **100L** directive | **100U** blocked |
 | **100U** | Panels bind to real APIs | No mock backend state | **100K** blocked |
-| **100K–100N** | IDE milestones per directive | IDE + API proofs per **100K–100N** | “Cursor-equivalent” IDE incomplete |
+| **100K–100N** | IDE milestones per directive | IDE + API proofs per **100K**, **100P**, **100M**, **100N** | “Cursor-equivalent” IDE incomplete |
 
 **Fix directives:** each FIX’s §5–7 acceptance, tests, and proof objects apply at its injection gate.
 
@@ -255,7 +259,7 @@ Abbreviated summary only; **acceptance and proof follow the implementation direc
 
 1. Follow **Policy — Onboarding read scope**: Master Guide (relevant sections), Playbook, target directive file, and **only LLDs/parents that directive lists** — not full **000A–000P** pre-read.  
 2. Execute **Phase 1** in order; apply **§5** fixes at the listed gates.  
-3. Complete **100U**, then **Phase 2** IDE sequence with **FIX 001** and **FIX 003** before **100M**.  
+3. Complete **100L** then **100U**, then **Phase 2** IDE sequence with **FIX 001** and **FIX 003** before **100M**.  
 4. Resolve conflicts using **Policy — Source of truth**: **implementation directive → this guide → playbook**; LLD details win over this guide where the directive points to them.  
 5. Use **`TRIDENT_GOVERNED_EXECUTION_PLAYBOOK_v1_1.md`** for the mandatory **Read → Plan → Build → Prove → Review** loop on each directive (no coding until plan acknowledgment; proof before next step).
 
@@ -267,9 +271,9 @@ Abbreviated summary only; **acceptance and proof follow the implementation direc
 2. Build skeleton per **100A** until directive acceptance; checkpoint.  
 3. Follow **100B → 100C → 100O → 100D** using each directive’s acceptance criteria (**100O** implementation directive issued; see filename under §3.1).  
 4. After **100D** passes, open **FIX 004**; implement and prove before **100G**.  
-5. Continue **100E → 100F → 100G** (subsystem router); complete **100H → 100I → 100J → 100U** as needed; schedule **100R** then **FIX 005** before treating **external LLM** APIs as production-ready.  
+5. Continue **100E → 100F → 100G** (subsystem router); complete **100H → 100I → 100J → 100L → 100U** as needed; schedule **100R** then **FIX 005** before treating **external LLM** APIs as production-ready.  
 6. Complete **100H** (agents); implement **FIX 002** before **100I**.  
-7. Run **100I → 100J → 100U**; then **100K → 100L**; apply **FIX 001** and **FIX 003**; finish **100M → 100N**.
+7. Run **100I → 100J → 100L → 100U**; then **100K → 100P**; apply **FIX 001** and **FIX 003**; finish **100M → 100N**.
 
 ---
 

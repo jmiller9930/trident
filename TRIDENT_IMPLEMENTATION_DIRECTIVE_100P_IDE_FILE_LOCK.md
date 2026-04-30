@@ -1,5 +1,7 @@
-# TRIDENT IMPLEMENTATION DIRECTIVE 100L
+# TRIDENT IMPLEMENTATION DIRECTIVE 100P
 ## IDE File Lock + Governed Edit Flow
+
+**Renumbering note:** Formerly **Directive 100L** — **100L** is reserved for **Production Hardening** (`TRIDENT_IMPLEMENTATION_DIRECTIVE_100L_PRODUCTION_HARDENING.md`).
 
 ---
 
@@ -134,8 +136,8 @@ Engineering must NOT:
 ## 14. Manifest Link
 
 Parent: Trident Manifest v1.0  
-Depends on: 100K  
-Unlocks: 100M — IDE Patch + Apply Workflow
+Depends on: **100K** — IDE bootstrap  
+Unlocks: **100M** — IDE Patch + Apply Workflow
 
 ---
 
