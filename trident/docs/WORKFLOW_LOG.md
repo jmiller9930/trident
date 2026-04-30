@@ -995,9 +995,78 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 - **Tests:** **`tests/test_ide_chat_100k.py`**; full **`pytest`** **79 passed**.
 - **Extension:** **`trident-ide-extension/`** — `TridentClient`, activity-bar sidebar, chat webview → **`/api/v1/ide/chat`**, commands for agent/memory JSON and health. **`README.md`** + **`.vscode`** launch/tasks.
 
-**Directive: `100K` · Status: `PASS`** — proof **`dc5e2dc`** (await architect formal **ACCEPT** if required).
+**Directive: `100K` · Status: `PASS`** — proof **`dc5e2dc`** (+ doc **`08195af`**).
 
-**Next:** **100P** — IDE file lock + governed edit — per manifest.
+---
+
+## Directive: **100K_FINAL** — Program CLOSED
+
+**Status:** **CLOSED** — **ACCEPTED**
+
+- **Verification:** IDE chat endpoint (deterministic stub); **`IDE_CHAT_REQUEST`** / **`IDE_CHAT_RESPONSE`**; **`CHAT_LOG`** proof; no Nike/router/agent/MCP/memory drift; extension functional; **`pytest` 79**.
+- **Accepted commits:** **`dc5e2dc`**, **`08195af`**.
+- **System state:** **FULL STACK (CORE + UI + IDE STUB) = VERIFIED.**
+
+**Next:** **100P** — IDE file lock integration — **ISSUED**.
+
+---
+
+## Directive: **100P** — IDE File Lock + Governed Edit Flow
+
+**Authoritative file:** **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100P_IDE_FILE_LOCK.md`** · **Depends on:** **100K** (**ACCEPTED**) · **Unlocks:** **100M** · **Related:** **`TRIDENT_FIX_DIRECTIVE_001_IDE_WRITE_GATE_ENFORCEMENT.md`** (must complete before **100M**/**100N** per FIX manifest)
+
+### Step 1 — Read (engineering) — **COMPLETE**
+
+**Directive intent:** Enforce **backend-authoritative file locks** in the Trident IDE: no governed edit without **`POST /api/v1/locks/acquire`** success; validate ownership during editing; release via **`POST /api/v1/locks/release`**; visible lock state / rejection UX; Git awareness (diff/dirty/branch) per §9.
+
+**Backend today (100E — unchanged surface for acquire/release):**
+
+| Endpoint | Role |
+|----------|------|
+| **`POST /api/v1/locks/acquire`** | **`LockAcquireRequest`**: `project_id`, `directive_id`, `agent_role`, `user_id`, `file_path` (relative; normalized server-side) |
+| **`POST /api/v1/locks/release`** | Matching identity + path + `lock_id` |
+| **`POST /api/v1/locks/simulated-mutation`** | Governed mutation pipeline (out of scope for bare edit gate MVP) |
+
+**Observations:**
+
+- **`file_locks.expires_at`** exists but **`LockService.acquire`** does not set TTL yet — “expiration” tests may require either **(a)** setting **`expires_at`** in service + enforcing in read path, or **(b)** defining “expiry” as **RELEASED / superseded** only until TTL is productized.
+- **No read-only “active lock for path” API** — IDE cannot poll server truth without **`GET`** (or repeating acquire and treating 409 as “held by other”). A minimal **`GET /api/v1/locks/active`** (or **`HEAD`** semantics) is strongly indicated for **verify during edit** / **auto-refresh** without side effects.
+- **Project / user identity:** Lock APIs require **UUID** `project_id` and `user_id`. The extension today has **`trident.apiBaseUrl`** only — **100P** must add workspace settings (or server lookup) for **`projectId`**, **`userId`**, and **`agentRole`** (e.g. **`USER`**) aligned with backend **`users`/`projects`** rows.
+- **Git awareness §9:** There is **no** **`GET /api/v1/git/status`** in the API slice used by **100U**. Options: **(1)** VS Code **`vscode.git`** API for **display-only** branch/dirty hints with explicit banner that **lock authority is backend**; **(2)** add a **narrow read-only** backend git snapshot endpoint in **100P** Step 3 if architect requires server-sourced diff only.
+
+**FIX 001 (Write Gate):** Requires **design decision** documenting enforcement mechanism and **residual bypass risk** (OS/external editors). **100P** Step 3 should deliver that decision + implement **extension-level** interception as baseline.
+
+---
+
+### Step 2 — Plan (engineering)
+
+**Directive: `100P_PLAN` · Status: `READY`** (pending architect **ACK** before Step 3 Build)
+
+**FIX 001 — chosen approach (baseline):** **Hybrid (1+2 lite)** — primary: **VS Code extension document change interception** via **`onWillSaveTextDocument`** (block save) + **`onDidChangeTextDocument`** / **`WorkspaceEdit`** rollback for **governed** files when lock invalid (best-effort; cannot defeat `echo >> file` outside VS Code). Document **cannot-prevent** paths (external processes, other workspaces). Defer **virtual FileSystemProvider** / **Code-OSS fork** to future unless architect escalates.
+
+**Backend slices (minimal, no router/agent/MCP/Nike drift):**
+
+1. **`GET /api/v1/locks/active`** — query `project_id` + relative `file_path`; returns active lock metadata (**`lock_id`**, **`directive_id`**, **`locked_by_user_id`**, **`locked_by_agent_role`**, **`expires_at`**) or **404**; treats **`expires_at < now`** as inactive. Read-only; no new write behavior.
+2. **Optional TTL:** Set **`expires_at`** on acquire from settings (e.g. **`TRIDENT_LOCK_TTL_SEC`**) and enforce in **`GET` + acquire conflict paths** — only if architect confirms desired semantics.
+
+**Extension (`trident-ide-extension/`):**
+
+| Planned path | Responsibility |
+|--------------|------------------|
+| **`src/locking/lockClient.ts`** | Wrap acquire / release / active-get |
+| **`src/locking/lockInterceptor.ts`** | Map workspace **`Uri`** → repo-relative path vs **`Project.allowed_root_path`** (client-side prefix check mirroring backend rules where possible) |
+| **`src/editors/editGuard.ts`** | Subscribe save + change events; consult cache + **`GET .../locks/active`** throttle; block / rollback; status bar + decorations |
+| **Settings** | **`trident.projectId`**, **`trident.userId`**, **`trident.agentRole`** (default **`USER`**) |
+| **Commands** | **Acquire lock for active editor**, **Release lock**, **Refresh lock badge** |
+
+**Tests:**
+
+- **Backend:** **`pytest`** for **`GET /locks/active`** + TTL/expiry if implemented.
+- **IDE / integration:** Harness or manual proof per §11–12 (blocked vs allowed edit, conflict); screenshots + audit samples for FIX 001 §7.
+
+**Explicit non-goals for Step 3 (unless architect expands):** No change to **simulated-mutation** semantics; no **memory/router** coupling; no replacing **PostgreSQL** lock rows with local-only state.
+
+**`100P_PLAN` → `BLOCKED` triggers:** Architect forbids **any** new **`GET`** lock endpoint (would force acquire-probe pattern); or mandates **virtual FS** only without phased plan.
 
 ---
 
