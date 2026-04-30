@@ -19,6 +19,7 @@ from app.memory.memory_writer import MemoryWriter
 from app.models.enums import AgentRole, DirectiveStatus, TaskLifecycleState
 from app.models.directive import Directive
 from app.models.task_ledger import TaskLedger
+from app.agents.agent_executor import run_engineer_agent_phase
 from app.workflow.persistence import load_spine_context, record_node, update_directive_status
 from app.workflow.state import SpineState
 
@@ -77,7 +78,9 @@ def compile_spine(session: Session):
             to_ledger=TaskLifecycleState.IN_PROGRESS,
             agent=AgentRole.ENGINEER,
         )
-        _spine_memory_checkpoint(session, state, directive, ledger, "engineer")
+        out = run_engineer_agent_phase(session, directive, ledger, graph, state)
+        if out.memory_write is None:
+            _spine_memory_checkpoint(session, state, directive, ledger, "engineer")
         return {"nodes_executed": ["engineer"]}
 
     def reviewer(state: SpineState) -> dict[str, Any]:

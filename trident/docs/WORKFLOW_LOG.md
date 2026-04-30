@@ -596,7 +596,7 @@ Program **ACCEPTED** **100G_FINAL** — subsystem router implementation + clawbo
 
 ## Directive: 100H — Agent execution layer
 
-**Status:** PLANNING
+**Status:** STEP 3 **COMPLETE (engineering proof)** — authorized after program **ACCEPT** **DOC_100H_CONFLICT_RESOLUTION** at **`60df87f`**
 
 ### Plan (Step 1 — Read)
 
@@ -622,19 +622,36 @@ Program **ACCEPTED** **100G_FINAL** — subsystem router implementation + clawbo
 
 **ACCEPTED IN PRINCIPLE** — Step 1–2 technical direction stands.
 
+### Enforcement (100H scope — program)
+
+- No UI responsibilities  
+- No direct execution (agents route MCP **only** via `MCPService`)  
+- No subprocess / shell  
+- No file or Git mutation  
+- No MCP bypass  
+- No memory bypass (`MemoryWriter.write_from_graph` only)  
+- No Nike reasoning  
+- No router scope expansion  
+
 ### Build status
 
-**Documentation gate:** Directive ID conflict **resolved** in repo (**100U** = UI; **100H** = Agent Execution Layer). **Implementation Step 3 (build)** remains **BLOCKED** until program **ACCEPT** on **DOC_100H_CONFLICT_RESOLUTION** (per enforcement).
+**DOC_100H_CONFLICT_RESOLUTION:** **PASS** (accepted **`60df87f`**). **Step 3 Build:** **AUTHORIZED**.
 
 ### Unlock
 
-**100I+** only after **100H Agent** build completes **post** program ACCEPT on **DOC_100H_CONFLICT_RESOLUTION**.
+**100I** after program **ACCEPT** on **100H_FINAL** engineering proof (below).
+
+### Engineering proof (Step 3)
+
+- **`pytest`:** **72 passed** (full `trident/backend` suite; includes **`tests/test_agents_100h.py`**).
+- **Chain:** engineer spine node → **`run_engineer_agent_phase`** → **`AGENT_*`** audits → **`MCPService.execute`** → **`MemoryWriter.write_from_graph`** → **`AGENT_RESULT`**.
+- **Commit:** git **`HEAD`** on **`main`** — message prefix **`feat(100H): agent execution layer`** (see **`100H_FINAL`**).
 
 ---
 
 ## Directive: DOC_100H_CONFLICT_RESOLUTION
 
-**Status:** **COMPLETE (engineering)** — **PENDING** program **ACCEPT**
+**Status:** **PASS** — program **ACCEPTED** at **`60df87f`**
 
 ### Summary
 
@@ -645,7 +662,25 @@ Program **ACCEPTED** **100G_FINAL** — subsystem router implementation + clawbo
 
 ### Gate Decision
 
-Awaiting program **ACCEPT** to clear **100H** implementation build gate.
+**ACCEPTED** — **100H** = Backend Agent Execution Layer; **100U** = Web UI / Presentation Layer; **100H Step 3 Build** authorized.
+
+---
+
+## Directive: 100H_FINAL — Engineering proof (Step 3)
+
+**Status:** **PASS** (engineering)
+
+### Proof checklist (filled)
+
+- **Scope:** `app/agents/` — `schemas`, `agent_context`, `agent_logger`, `agent_registry`, `agent_executor`; **`engineer`** spine node calls **`run_engineer_agent_phase`** after **`record_node`**.
+- **Audits:** `AGENT_INVOCATION`, `AGENT_DECISION`, `AGENT_MCP_REQUEST`, `AGENT_RESULT` plus **`MCP_EXECUTION_REQUESTED`** / **`MCP_EXECUTION_COMPLETED`** from **`MCPService`** and **`MEMORY_WRITE`** from **`MemoryWriter`** (ordered subsequence asserted in tests).
+- **Memory:** Stub supplies **`memory_write`** → **`MemoryWriter.write_from_graph`** only; engineer **`_spine_memory_checkpoint`** skipped when stub writes (no duplicate spine checkpoint for that node).
+- **Hygiene:** `app/agents/**/*.py` contains **no** `subprocess` / `os.system` (see **`tests/test_agents_100h.py`**).
+- **Commands run:** `cd trident/backend && python3 -m pytest -q` → **72 passed**.
+
+### Commit
+
+Merge on **`main`**: **`feat(100H): agent execution layer — LangGraph engineer hook, MCP, audits`**
 
 ---
 
