@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -15,8 +15,48 @@ from app.schemas.directive import (
     DirectiveSummary,
     TaskLedgerSummary,
 )
+from app.schemas.workflow import WorkflowRunResponse
+from app.workflow.spine import run_spine_workflow
 
 router = APIRouter()
+
+
+@router.post("/{directive_id}/workflow/run", response_model=WorkflowRunResponse)
+def run_workflow(
+    directive_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    reviewer_rejections_remaining: int = Query(
+        0,
+        ge=0,
+        le=32,
+        description="Deterministic reviewer rejections before accept (100C simulation).",
+    ),
+) -> WorkflowRunResponse:
+    """Execute LangGraph spine for this directive (100C). Single entrypoint for workflow."""
+    try:
+        out = run_spine_workflow(
+            db,
+            directive_id,
+            reviewer_rejections_remaining=reviewer_rejections_remaining,
+        )
+    except ValueError as e:
+        code = str(e)
+        if code == "directive_not_found":
+            raise HTTPException(status_code=404, detail=code) from e
+        if code == "workflow_already_complete":
+            raise HTTPException(status_code=409, detail=code) from e
+        raise HTTPException(status_code=400, detail=code) from e
+    drepo = DirectiveRepository(db)
+    trepo = TaskLedgerRepository(db)
+    d = drepo.get_by_id(directive_id)
+    ledger = trepo.get_by_directive_id(directive_id)
+    assert d is not None and ledger is not None
+    return WorkflowRunResponse(
+        directive_id=directive_id,
+        final_ledger_state=ledger.current_state,
+        directive_status=d.status,
+        nodes_executed=out["nodes_executed"],
+    )
 
 
 @router.post("/", response_model=DirectiveDetailResponse)

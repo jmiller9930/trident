@@ -1,6 +1,6 @@
 # Trident — runtime + persistence (100A / 100B)
 
-Phase 2 stack: FastAPI with **Postgres persistence** (SQLAlchemy + Alembic), web placeholder, worker heartbeat, exec placeholder, vector placeholder. **100B** adds schema models, migrations, directive APIs, and audited writes — still **no** LangGraph execution, MCP product logic, agents, memory retrieval, router, or Git automation.
+Phase 2 stack: FastAPI with **Postgres persistence** (SQLAlchemy + Alembic), web placeholder, worker heartbeat, exec placeholder, vector placeholder. **100B** adds schema models, migrations, directive APIs, and audited writes. **100C** adds the **LangGraph spine** (Architect → Engineer → Reviewer → Docs → Close, with reviewer→engineer rejection loop), persisted via ledger + graph state + audit — still **no** real coding, MCP product logic, memory retrieval, router, or Git automation.
 
 ## Deployment target (locked)
 

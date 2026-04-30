@@ -116,6 +116,16 @@ docker compose exec trident-api python -m alembic downgrade -1   # rollback one 
 
 Clean DB volume (destructive): `docker compose down -v` then bring the stack back up.
 
+### LangGraph spine (100C)
+
+Run the default workflow for a directive (after creating it via `POST .../directives/`). When `TRIDENT_BASE_PATH=/trident`, use the prefix on the host:
+
+```bash
+curl -sS -X POST "http://localhost:8000/trident/api/v1/directives/<DIRECTIVE_ID>/workflow/run?reviewer_rejections_remaining=0"
+```
+
+`reviewer_rejections_remaining=1` exercises the reviewer→engineer rejection loop once before completing.
+
 ## Stop condition
 
 If clawbot lacks Docker, Compose, DNS, persistent storage, or a viable reverse-proxy path for `/trident`, **stop** and report gaps **before** relying on this deployment path.
