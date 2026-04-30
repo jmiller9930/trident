@@ -1068,7 +1068,7 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 - **Tests:** **`tests/test_locks_active_100p.py`**; **`pytest` 83 passed**.
 - **Extension:** **`src/locking/lockClient.ts`**, **`lockInterceptor.ts`**, **`src/editors/editGuard.ts`** — **`onWillSave`** blocks save without valid lock; debounced **`onDidChange`** rollback; **`trident.acquireLock` / `trident.releaseLock`**; governance **`OutputChannel`**.
 
-**Directive: `100P` · Status: `PASS`** — proof commit TBD on **`main`**.
+**Directive: `100P` · Status: `PASS`** — proof **`565b6ae`**.
 
 **Next:** **100M** — IDE patch + apply — per manifest (**FIX 001** may still require explicit closure artifacts).
 
