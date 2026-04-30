@@ -84,7 +84,7 @@ services:
       - "${TRIDENT_WEB_PORT:-3000}:80"
     environment:
       TRIDENT_BASE_PATH: ${TRIDENT_BASE_PATH:-}
-      TRIDENT_PUBLIC_BASE_URL: ${TRIDENT_PUBLIC_BASE_URL:-http://localhost:8000}
+      TRIDENT_PUBLIC_BASE_URL: ${TRIDENT_PUBLIC_BASE_URL:-}
     depends_on:
       trident-api:
         condition: service_healthy

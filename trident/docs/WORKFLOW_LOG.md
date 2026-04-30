@@ -910,9 +910,18 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 
 ## Directive: **100U** — UI Layer (Web Interface)
 
-**Status:** **ISSUED** — Step 1 Read + Step 2 Plan (await architect acknowledgment before Step 3 Build)
-
 **Authoritative file:** **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100U_UI.md`** · **Depends on:** **100L** · **Unlocks:** **100K** · **LLD gate:** **000H**
+
+### Step 3 Build — **PASS** (pending architect ACCEPT)
+
+- **Commit:** **`6841e67`**
+- **Stack:** React 18 + Vite + TypeScript; **`npm run build`** + **`vitest`** (2 tests) **PASS**.
+- **Delivery:** `trident/frontend` — layout (nav / workspace / control rail); live **`fetch`** to **`/v1/*`** via **`getApiBase()`** (supports **`TRIDENT_PUBLIC_BASE_URL`** or same-origin proxy).
+- **Nginx (100U):** `nginx.conf.template` — proxies **`${TRIDENT_BASE_PATH}/api/`** → **`trident-api`**; entrypoint sets **`TRIDENT_NGINX_LOCATION_API`**; **`docker-compose`** default **`TRIDENT_PUBLIC_BASE_URL`** empty for **trident-web** (same-origin).
+- **Git panel:** limitation banner + GIT-prefixed proof types from existing memory read — **no** new Git APIs.
+- **LangGraph / state:** directive detail + **`/v1/memory/directive/{id}`** (`task_ledger`, `handoffs`, entries, proofs) — **no** backend changes.
+- **Backend tests:** **`pytest` 77 passed** (unchanged).
+- **Docs:** **`OPERATIONS_RUNBOOK.md`** — web→API proxy note.
 
 ---
 
