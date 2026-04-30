@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trident Web — Skeleton</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 2rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Trident Web (100A skeleton)</h1>
+    <p id="api-health">Checking API…</p>
+    <script>
+      const apiBase = "http://localhost:8000";
+      fetch(apiBase + "/api/health")
+        .then((r) => r.json())
+        .then((j) => {
+          document.getElementById("api-health").textContent =
+            "API /api/health: " + JSON.stringify(j);
+        })
+        .catch((e) => {
+          document.getElementById("api-health").textContent =
+            "API unreachable from browser: " + e;
+        });
+    </script>
+  </body>
+</html>

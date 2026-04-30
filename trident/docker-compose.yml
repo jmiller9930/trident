@@ -1,0 +1,116 @@
+services:
+  trident-db:
+    image: postgres:16-alpine
+    container_name: trident-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-trident}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_local_only}
+      POSTGRES_DB: ${POSTGRES_DB:-trident}
+    volumes:
+      - trident_db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trident -d trident"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  trident-vector:
+    build:
+      context: ./vector-placeholder
+      dockerfile: Dockerfile
+    container_name: trident-vector
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health')\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  trident-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: trident-api
+    ports:
+      - "8000:8000"
+    environment:
+      TRIDENT_ENV: ${TRIDENT_ENV:-development}
+      TRIDENT_LOG_LEVEL: ${TRIDENT_LOG_LEVEL:-INFO}
+      TRIDENT_DB_HOST: trident-db
+      TRIDENT_DB_PORT: "5432"
+      TRIDENT_VECTOR_HOST: trident-vector
+      TRIDENT_VECTOR_PORT: "8001"
+    depends_on:
+      trident-db:
+        condition: service_healthy
+      trident-vector:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  trident-web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: trident-web
+    ports:
+      - "${TRIDENT_WEB_PORT:-3000}:80"
+    depends_on:
+      trident-api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:80/ | grep -q Trident",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  trident-worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: trident-worker
+    environment:
+      TRIDENT_WORKER_HEARTBEAT_SEC: "15"
+    depends_on:
+      trident-api:
+        condition: service_started
+
+  trident-exec:
+    build:
+      context: ./exec
+      dockerfile: Dockerfile
+    container_name: trident-exec
+    ports:
+      - "8010:8010"
+    depends_on:
+      trident-api:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8010/health')\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  trident_db_data:

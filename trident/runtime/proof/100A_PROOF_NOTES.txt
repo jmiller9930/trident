@@ -1,0 +1,7 @@
+100A — proof capture notes (engineering)
+
+- pytest: PASS (6 tests) — run: cd backend && python -m pytest
+- docker compose config: PASS (syntax validation)
+- docker compose build/up/ps/curl/restart: NOT RUN — Docker daemon unavailable in CI/agent environment; run locally per README.
+
+Documentation cleanup: Foundation v1.1 tracked in docs/DOCUMENTATION_CLEANUP_LOG.md
