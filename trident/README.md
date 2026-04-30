@@ -1,6 +1,6 @@
-# Trident — runtime skeleton (100A)
+# Trident — runtime + persistence (100A / 100B)
 
-Phase 2 implementation skeleton only: API, web placeholder, worker heartbeat, exec placeholder, Postgres, vector placeholder. No LangGraph, MCP product logic, agents, memory, router, or Git automation.
+Phase 2 stack: FastAPI with **Postgres persistence** (SQLAlchemy + Alembic), web placeholder, worker heartbeat, exec placeholder, vector placeholder. **100B** adds schema models, migrations, directive APIs, and audited writes — still **no** LangGraph execution, MCP product logic, agents, memory retrieval, router, or Git automation.
 
 ## Deployment target (locked)
 
@@ -26,6 +26,8 @@ cp .env.example .env
 docker compose build
 docker compose up -d
 docker compose ps
+# API container runs `alembic upgrade head` on startup (see backend/docker-entrypoint.sh)
+curl -s http://localhost:8000/api/v1/system/schema-status
 curl -s http://localhost:8000/api/health
 curl -s http://localhost:8000/api/ready
 curl -s http://localhost:8000/api/version

@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     db_host: str = "trident-db"
     db_port: int = 5432
+    db_name: str = "trident"
+    db_user: str = "trident"
+    db_password: str = "changeme_local_only"
     vector_host: str = "trident-vector"
     vector_port: int = 8001
     """Public URL for OpenAPI/docs references (e.g. https://clawbot.a51.corp/trident)."""

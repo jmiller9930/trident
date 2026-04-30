@@ -101,6 +101,21 @@ docker compose up -d --build
 
 Replace `<REMOTE_URL>` with your canonical **origin** (same remote used from developer laptops).
 
+## Database migrations (100B)
+
+The API image entrypoint runs **`python -m alembic upgrade head`** before `uvicorn`, so tables are applied on container start.
+
+Equivalent manual commands (from the compose directory where `docker-compose.yml` lives):
+
+```bash
+docker compose exec trident-api python -m alembic upgrade head
+docker compose exec trident-api python -m alembic downgrade -1   # rollback one revision
+# Tests run on the host checkout (API image does not ship tests):
+# cd backend && PYTHONPATH=. pytest -q
+```
+
+Clean DB volume (destructive): `docker compose down -v` then bring the stack back up.
+
 ## Stop condition
 
 If clawbot lacks Docker, Compose, DNS, persistent storage, or a viable reverse-proxy path for `/trident`, **stop** and report gaps **before** relying on this deployment path.

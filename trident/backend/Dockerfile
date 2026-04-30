@@ -9,16 +9,19 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY alembic.ini .
+COPY alembic ./alembic
 COPY app ./app
 COPY docker-healthcheck.sh /usr/local/bin/docker-healthcheck.sh
-RUN chmod +x /usr/local/bin/docker-healthcheck.sh
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-healthcheck.sh /usr/local/bin/docker-entrypoint.sh
 
 ENV PYTHONPATH=/app
 ENV TRIDENT_LOG_LEVEL=INFO
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=10s --timeout=5s --retries=5 --start-period=15s \
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 --start-period=35s \
   CMD /usr/local/bin/docker-healthcheck.sh
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

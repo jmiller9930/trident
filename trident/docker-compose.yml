@@ -46,6 +46,9 @@ services:
       TRIDENT_LOG_LEVEL: ${TRIDENT_LOG_LEVEL:-INFO}
       TRIDENT_DB_HOST: trident-db
       TRIDENT_DB_PORT: "5432"
+      TRIDENT_DB_NAME: ${POSTGRES_DB:-trident}
+      TRIDENT_DB_USER: ${POSTGRES_USER:-trident}
+      TRIDENT_DB_PASSWORD: ${POSTGRES_PASSWORD:-changeme_local_only}
       TRIDENT_VECTOR_HOST: trident-vector
       TRIDENT_VECTOR_PORT: "8001"
       TRIDENT_BASE_PATH: ${TRIDENT_BASE_PATH:-}
