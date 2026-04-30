@@ -53,6 +53,8 @@ class MCPService:
             risk=risk.value,
             rationale=rationale,
         )
+        # Flush so MCP_EXECUTION_REQUESTED always precedes COMPLETED in audit ordering (Postgres tie-break on id/created_at).
+        self._session.flush()
 
         if risk == RiskLevel.HIGH and not body.explicitly_approved:
             receipt = {
