@@ -853,7 +853,9 @@ API prefix: when deployed behind **`/trident`**, ensure **`TRIDENT_BASE_PATH=/tr
 
 ### Next
 
-**100J** — Deployment + Production Validation — governed **Step 1 Read → Step 2 Plan** only; **no build or run** until plan is acknowledged. Scope: clean deploy, service health, restart durability, backup/restore readiness, security posture, logging/audit access, operational runbook readiness — **no** new product behavior.
+**100J** — Deployment + Production Validation — authoritative file: **`TRIDENT_IMPLEMENTATION_DIRECTIVE_100J_DEPLOYMENT_PRODUCTION_VALIDATION.md`** (canonical name; do not use alternate filenames).
+
+**100J_PLAN:** **ACCEPTED** — Step 3 Build/Execute authorized (validation only; **no** UI/perf expansion; **no** agents/router/MCP/memory/Nike/model routing changes).
 
 ---
 

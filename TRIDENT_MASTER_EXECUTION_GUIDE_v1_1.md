@@ -153,6 +153,7 @@ TRIDENT_IMPLEMENTATION_DIRECTIVE_<STEP>_<TITLE_SLUG>.md
 **Example — 100O:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100O_NIKE_EVENT_ORCHESTRATOR.md` — Nike implementation per **000P** (worker dispatcher; backend agent-hook extensibility per Manifest §2 principles 12–13).  
 **Example — 100H:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100H_AGENT_EXECUTION_LAYER.md` — Agent Execution Layer (**backend only**).  
 **Example — 100U:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100U_UI.md` — Web UI.  
+**Example — 100J:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100J_DEPLOYMENT_PRODUCTION_VALIDATION.md` — Deployment + production validation.  
 Fix directives: under `TRIDENT_FIX_DIRECTIVES_001_005/` or matching `TRIDENT_FIX_DIRECTIVE_<NNN>_*.md`.
 
 ---

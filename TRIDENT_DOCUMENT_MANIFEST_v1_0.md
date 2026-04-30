@@ -187,6 +187,14 @@ The system is governed by these non-negotiable principles:
 **Depends on:** **100H**  
 **Unlocks:** **100J**
 
+#### TRIDENT-IMPLEMENTATION-DIRECTIVE-100J
+**File:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100J_DEPLOYMENT_PRODUCTION_VALIDATION.md`  
+**Type:** Implementation Directive  
+**Status:** Issued  
+**Purpose:** **Deployment + production validation** — compose deploy, health, restart durability, persistence, baseline security/logging/runbook; **no** new product features (**000J**, **000M**).  
+**Depends on:** **100I**  
+**Unlocks:** **100U**
+
 #### TRIDENT-IMPLEMENTATION-DIRECTIVE-100U
 **File:** `TRIDENT_IMPLEMENTATION_DIRECTIVE_100U_UI.md`  
 **Type:** Implementation Directive  
