@@ -678,42 +678,50 @@ Program **ACCEPTED** **100G_FINAL** — subsystem router implementation + clawbo
 - **Hygiene:** `app/agents/**/*.py` contains **no** `subprocess` / `os.system` (see **`tests/test_agents_100h.py`**).
 - **Tests:** `cd trident/backend && python3 -m pytest -q` — full suite green in engineering CI/local.
 
-### Clawbot runtime proof (required)
+### RUN ORDER — 100H FINAL CLAWBOT PROOF
 
-On **clawbot** (example — adjust path to repo layout):
+**Gate:** **`100H_FINAL` = CONDITIONAL PASS** · **`100I` = LOCKED** until live clawbot proof below **PASS**es.
+
+**Complete (already):** local tests · proof harness **`clawbot_100h_proof.py`** · no-bypass guard · **`WORKFLOW_LOG`** governance · explicit PASS marker list.
+
+**Not complete:** live clawbot runtime proof — operator/engineering runs:
 
 ```bash
 ssh jmiller@clawbot.a51.corp
-cd ~/code_projects/trident/trident/trident   # or canonical clone path
+cd ~/code_projects/trident/trident/trident
 git pull origin main
 docker compose down
 docker compose up -d --build
 docker compose exec trident-api python -m alembic upgrade head
-docker compose exec trident-api python -m alembic current
-docker compose exec trident-api python clawbot_100h_proof.py
-# Optional: set TRIDENT_GIT_HEAD=$(git rev-parse HEAD) on host, then:
-# docker compose exec -e TRIDENT_GIT_HEAD="$TRIDENT_GIT_HEAD" trident-api python clawbot_100h_proof.py
+export TRIDENT_GIT_HEAD=$(git rev-parse HEAD)
+docker compose exec -e TRIDENT_GIT_HEAD="$TRIDENT_GIT_HEAD" trident-api python clawbot_100h_proof.py
 docker compose restart trident-api
-docker compose exec trident-api env TRIDENT_100H_VERIFY_DIRECTIVE_ID='<directive_uuid_from_script_output>' python clawbot_100h_proof.py
+```
+
+Restart verification (use **`TRIDENT_100H_VERIFY_DIRECTIVE_ID`** printed by the first script):
+
+```bash
+docker compose exec trident-api env TRIDENT_100H_VERIFY_DIRECTIVE_ID='<directive_id_from_script>' python clawbot_100h_proof.py
 docker compose ps
 ```
 
-Script: **`trident/backend/clawbot_100h_proof.py`** (copied into **`trident-api`** image). Validates ordered audit subsequence, MCP **`EXECUTION_LOG`** proof, **`agent:engineer`** memory row, directive **`COMPLETE`** / ledger **`CLOSED`**, and **`MCP_no_bypass_guard`** (**each `MCP_EXECUTION_COMPLETED` has `AGENT_MCP_REQUEST` in the audit window since the prior completion** — proves **`AGENT_MCP_REQUEST → MCP_EXECUTION_COMPLETED`** per completion window).
+Script: **`trident/backend/clawbot_100h_proof.py`** (in **`trident-api`** image). Validates ordered audit subsequence, MCP **`EXECUTION_LOG`** proof, **`agent:engineer`** memory row, directive **`COMPLETE`** / ledger **`CLOSED`**, and **`MCP_no_bypass_guard`** (**each `MCP_EXECUTION_COMPLETED` has `AGENT_MCP_REQUEST` in the audit window since the prior completion**).
 
-### Clawbot PASS markers (all required — **do not unlock 100I** until present)
+### Required PASS markers (all must be present — **do not unlock 100I** otherwise)
 
 ```text
 100h_clawbot_proof_ok=1
-Status: PASS                    # primary workflow run (exit 0)
-MCP_no_bypass_guard: PASS       # AGENT_MCP_REQUEST precedes each MCP_EXECUTION_COMPLETED window
-restart verify PASS             # second run: TRIDENT_100H_VERIFY_DIRECTIVE_ID=… → exit 0, Status: PASS, restart_verify_PASS=1
+MCP_no_bypass_guard: PASS
+restart_verify_PASS=1
 directive COMPLETE
 ledger CLOSED
-agent:engineer memory row       # MemoryEntry title prefix agent:engineer
-EXECUTION_LOG proof object      # ProofObject proof_type EXECUTION_LOG for directive
+agent:engineer memory row
+EXECUTION_LOG proof object
 ```
 
-**Enforcement:** **100I** remains **BLOCKED** until program accepts clawbot evidence with **every** marker above (plus structured return template / **`docker compose ps`** as required by governance).
+First run must also show **`Status: PASS`** and exit **0**; restart run must show **`Status: PASS`**, **`restart_verify_PASS=1`**, exit **0**.
+
+**Return:** paste **full stdout/stderr** from both script invocations plus **`docker compose ps`** output to program.
 
 ### Return template (paste back to program)
 
