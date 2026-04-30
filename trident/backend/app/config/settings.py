@@ -23,8 +23,11 @@ class Settings(BaseSettings):
     db_name: str = "trident"
     db_user: str = "trident"
     db_password: str = "changeme_local_only"
-    vector_host: str = "trident-vector"
-    vector_port: int = 8001
+    """ChromaDB server host (empty = local ephemeral client for dev/tests)."""
+    chroma_host: str = ""
+    chroma_port: int = 8000
+    """When chroma_host is empty and this is set, use persistent on-disk Chroma (tests / single-node)."""
+    chroma_local_path: str = ""
     """Public URL for OpenAPI/docs references (e.g. https://clawbot.a51.corp/trident)."""
     public_base_url: str = ""
     """HTTP path prefix when served behind a reverse proxy (e.g. /trident). Empty for local dev."""

@@ -7,3 +7,4 @@ sqlalchemy>=2.0.25
 alembic>=1.13.0
 psycopg2-binary>=2.9.9
 langgraph==0.2.76
+chromadb>=0.5.23,<0.6

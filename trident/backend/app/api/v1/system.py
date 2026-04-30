@@ -21,6 +21,7 @@ _REQUIRED_TABLES = frozenset(
         "proof_objects",
         "audit_events",
         "file_locks",
+        "memory_entries",
     }
 )
 
