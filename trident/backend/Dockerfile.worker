@@ -1,0 +1,21 @@
+FROM python:3.12-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY alembic.ini .
+COPY alembic ./alembic
+COPY app ./app
+COPY docker-entrypoint-worker.sh /usr/local/bin/docker-entrypoint-worker.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint-worker.sh
+
+ENV PYTHONPATH=/app
+ENV TRIDENT_LOG_LEVEL=INFO
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint-worker.sh"]

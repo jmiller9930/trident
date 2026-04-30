@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     public_base_url: str = ""
     """HTTP path prefix when served behind a reverse proxy (e.g. /trident). Empty for local dev."""
     base_path: str = ""
+    """Nike worker poll interval when no pending events (seconds)."""
+    nike_poll_sec: float = 2.0
+    """Max processing attempts per event before dead-letter (global default, 100O)."""
+    nike_max_attempts: int = 5
+    """Base delay before returning an event to PENDING after a retriable failure (seconds)."""
+    nike_retry_backoff_sec: float = 1.0
 
     @field_validator("base_path", mode="before")
     @classmethod

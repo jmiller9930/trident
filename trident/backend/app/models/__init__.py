@@ -18,6 +18,18 @@ from app.models.proof_object import ProofObject
 from app.models.task_ledger import TaskLedger
 from app.models.user import User
 from app.models.workspace import Workspace
+from app.models.nike_enums import (
+    NikeAttemptOutcome,
+    NikeEventStatus,
+    NikeOutboxChannel,
+    NikeOutboxStatus,
+)
+from app.models.nike_event import (
+    NikeDeadLetterEvent,
+    NikeEvent,
+    NikeEventAttempt,
+    NikeNotificationOutbox,
+)
 
 __all__ = [
     "AgentRole",
@@ -29,6 +41,14 @@ __all__ = [
     "FileLock",
     "GraphState",
     "Handoff",
+    "NikeAttemptOutcome",
+    "NikeDeadLetterEvent",
+    "NikeEvent",
+    "NikeEventAttempt",
+    "NikeEventStatus",
+    "NikeNotificationOutbox",
+    "NikeOutboxChannel",
+    "NikeOutboxStatus",
     "ProofObject",
     "ProofObjectType",
     "Project",

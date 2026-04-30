@@ -84,12 +84,23 @@ services:
 
   trident-worker:
     build:
-      context: ./worker
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile.worker
     container_name: trident-worker
     environment:
-      TRIDENT_WORKER_HEARTBEAT_SEC: "15"
+      TRIDENT_ENV: ${TRIDENT_ENV:-development}
+      TRIDENT_LOG_LEVEL: ${TRIDENT_LOG_LEVEL:-INFO}
+      TRIDENT_DB_HOST: trident-db
+      TRIDENT_DB_PORT: "5432"
+      TRIDENT_DB_NAME: ${POSTGRES_DB:-trident}
+      TRIDENT_DB_USER: ${POSTGRES_USER:-trident}
+      TRIDENT_DB_PASSWORD: ${POSTGRES_PASSWORD:-changeme_local_only}
+      TRIDENT_NIKE_POLL_SEC: ${TRIDENT_NIKE_POLL_SEC:-2}
+      TRIDENT_NIKE_MAX_ATTEMPTS: ${TRIDENT_NIKE_MAX_ATTEMPTS:-5}
+      TRIDENT_NIKE_RETRY_BACKOFF_SEC: ${TRIDENT_NIKE_RETRY_BACKOFF_SEC:-1}
     depends_on:
+      trident-db:
+        condition: service_healthy
       trident-api:
         condition: service_started
 
