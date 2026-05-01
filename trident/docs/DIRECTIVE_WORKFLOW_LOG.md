@@ -15,10 +15,43 @@
 
 ---
 
+## Canonical naming standard (effective 2026-05-01)
+
+All future directives use `TRIDENT_<DOMAIN>_<SEQUENCE>`. Historical `TRIDENT_IMPLEMENTATION_DIRECTIVE_*` names are retained as aliases. Canonical registry: **`trident/docs/TRIDENT_DIRECTIVE_REGISTRY.md`**.
+
+---
+
 ## Log entries (newest first)
 
-| ID | Directive | Phase | Proof summary (engineering) | Architect decision | Logged |
-|----|-----------|-------|------------------------------|--------------------|--------|
+> **Alias column added 2026-05-01** — `TRIDENT_REGISTRY_CLEANUP_001` backfill.
+
+| ID | Directive | Canonical alias | Phase | Proof summary (engineering) | Architect decision | Logged |
+|----|-----------|----------------|-------|------------------------------|--------------------|--------|
+| W-056 | **TRIDENT_DIRECTIVE_REGISTRY_CLEANUP_001** | `TRIDENT_REGISTRY_CLEANUP_001` | Docs — registry backfill | `TRIDENT_DIRECTIVE_REGISTRY.md` created; `DIRECTIVE_WORKFLOW_LOG.md` + `WORKFLOW_LOG.md` + manifest updated with canonical aliases; naming standard established. | **ACCEPTED** | 2026-05-01 |
+| W-055 | **TRIDENT_IMPLEMENTATION_DIRECTIVE_VSCODE_001** | `TRIDENT_VSCODE_001` | VS Code extension | `getExecutionState()` + `ExecutionStateResponse` TS interfaces; `executionStatePanel.ts` (WebView, 9 action buttons from backend); `trident.showExecutionState` command; TS compile ✓ | **ACCEPTED** | 2026-05-01 |
+| W-054 | **TRIDENT_IMPLEMENTATION_DIRECTIVE_STATUS_001** (final) | `TRIDENT_STATUS_001` | Execution-state aggregate | `ExecutionStateService`, `ExecutionStateResponse` (9 actions with reason_code + blocking_reasons with required_next_action); `GET /execution-state`; DB-only, zero provider calls; **21 tests** | **ACCEPTED** | 2026-05-01 |
+| W-053 | **TRIDENT_IMPLEMENTATION_DIRECTIVE_STATUS_001** (iteration 1) | `TRIDENT_STATUS_001` (v1) | Status aggregate | `DirectiveStateService`, `GET /status`; lifecycle_phase, git/patch/validation/signoff + allowed_actions; **20 tests** | **ACCEPTED** | 2026-05-01 |
+| W-052 | **TRIDENT_IMPLEMENTATION_DIRECTIVE_SIGNOFF_001** | `TRIDENT_SIGNOFF_001` | Sign-off + closure | `DirectiveStatus.CLOSED`, `signoff001001` migration, `SignoffService` (PASSED ≥ 1, FAILED = 0), `/signoff` endpoint, `DIRECTIVE_SIGNOFF` proof, post-closure 409 guards; **14 tests** | **ACCEPTED** | 2026-05-01 |
+| W-051 | **TRIDENT_IMPLEMENTATION_DIRECTIVE_VALIDATION_001** | `TRIDENT_VALIDATION_001` | Validation tracking | `valid001001` migration, `ValidationRun` ORM, PENDING→RUNNING→PASSED→FAILED→WAIVED, `/validations` CRUD + start/complete/waive, proof on terminal; **26 tests** | **ACCEPTED** | 2026-05-01 |
+| W-050 | **TRIDENT_IMPLEMENTATION_DIRECTIVE_PATCH_002** | `TRIDENT_PATCH_002` | Patch execution | `patch002001` migration, `PatchExecutionStatus`, `/patches/{id}/execute`, `_convert_files_changed`, duplicate guard, retry, `PATCH_EXECUTED/FAILED` audit; **17 tests** | **ACCEPTED** | 2026-05-01 |
+| W-049 | **TRIDENT_IMPLEMENTATION_DIRECTIVE_PATCH_001** | `TRIDENT_PATCH_001` | Patch proposals | `patch001001` migration, `PatchProposal` ORM, PROPOSED→ACCEPTED→REJECTED→SUPERSEDED, immutability, `/patches` CRUD + accept/reject, proof on accept; **20 tests** | **ACCEPTED** | 2026-05-01 |
+| W-048 | **TRIDENT_IMPLEMENTATION_DIRECTIVE_GITHUB_005** | `TRIDENT_GITHUB_005` | Git push files | `push_files_for_directive()`, `/push-files` endpoint, path validation, `GitBranchLog(commit_pushed)`, `GIT_COMMIT_PUSHED` proof, `Project.git_commit_sha` update; **16 tests** | **ACCEPTED** | 2026-05-01 |
+| W-047 | **TRIDENT_IMPLEMENTATION_DIRECTIVE_GITHUB_004** | `TRIDENT_GITHUB_004` | Directive branch binding | `get_optional_git_provider`, `DirectiveIssueResponse` + git fields (additive), `create_branch_for_directive`, `GIT_BRANCH_CREATE_FAILED` audit; **10 tests** | **ACCEPTED** | 2026-05-01 |
+| W-046 | **TRIDENT_IMPLEMENTATION_DIRECTIVE_GITHUB_003** | `TRIDENT_GITHUB_003` | GitHub API endpoints | `GitProjectService`, `/create-repo`, `/link-repo`, `/repo-status`, `/create-branch`, `/branches`; RBAC; no token leakage; **23 tests** | **ACCEPTED** | 2026-05-01 |
+| W-045 | **TRIDENT_IMPLEMENTATION_DIRECTIVE_GITHUB_002** | `TRIDENT_GITHUB_002` | Git schema | `github002001` migration, `git_repo_links`, `git_branch_log`, `ProofObjectType.GIT_BRANCH_CREATED/PUSHED`, 4 new AuditEventTypes; **16 tests** | **ACCEPTED** | 2026-05-01 |
+| W-044 | **TRIDENT_IMPLEMENTATION_DIRECTIVE_GITHUB_001** | `TRIDENT_GITHUB_001` | GitHub provider | `GitProvider` ABC, `GitHubProvider`, `GitHubClient` (sole token holder), registry (fail-closed), `directive_branch_name`; **29 tests** | **ACCEPTED** | 2026-05-01 |
+| W-043 | **TRIDENT_IMPLEMENTATION_DIRECTIVE_ONBOARD_002** | `TRIDENT_ONBOARD_002` | Onboarding scan service | `OnboardingScanService` (11 checks, secrets count-only, path safety), `/onboarding` begin/scan/scan-result/status; **28 tests** | **ACCEPTED** | 2026-05-01 |
+| W-042 | **TRIDENT_IMPLEMENTATION_DIRECTIVE_ONBOARD_001** | `TRIDENT_ONBOARD_001` | Onboarding schema | `onboard001001` migration, `ProjectOnboarding` ORM, `OnboardingStatus` × 8, `ONBOARDING_AUDIT` gate, 5 audit events; **15 tests** | **ACCEPTED** | 2026-05-01 |
+| W-041 | **TRIDENT_IMPLEMENTATION_DIRECTIVE_MODEL_ROUTER_002** | `TRIDENT_MODEL_ROUTER_002` | Model plane wiring (EXTERNAL branch) | `ModelPlaneRouterService` wired into `ModelRouterService.route` EXTERNAL only; dual audit; `MODEL_PLANE_UNAVAILABLE` block; **144 tests** | **ACCEPTED** | 2026-05-01 |
+| W-040 | **TRIDENT_VALIDATION_DIRECTIVE_001** | `TRIDENT_VALIDATION_DIRECTIVE_001` | Live end-to-end validation | SSH to both hosts; 8/8 scenarios PASS (primary, secondary guard, fail-closed, circuit breaker, timeout, no-bypass, status endpoint) | **ACCEPTED** | 2026-05-01 |
+| W-039 | **TRIDENT_IMPLEMENTATION_DIRECTIVE_MODEL_ROUTER_001** | `TRIDENT_MODEL_ROUTER_001` | Model plane wiring | `ModelPlaneRouterService`, probes, circuit breaker, `model_plane_wiring_v1` audit, `/model-plane-status`; **139 tests** | **ACCEPTED** | 2026-05-01 |
+| W-038 | **TRIDENT_IMPLEMENTATION_DIRECTIVE_001** | `TRIDENT_IMPL_001` | Control plane foundation | `impl001001` migration, JWT auth, projects, membership, OWNER/ADMIN/CONTRIBUTOR/VIEWER, directives DRAFT→ISSUED, StateTransitionService; **130 tests** | **ACCEPTED** | 2026-04-30 |
+| W-037 | **STATE_001** | `TRIDENT_STATE_001` (legacy) | Schema foundation | **`state001001`** migration + `StateTransitionLog` / `ProjectGate` ORM + additive **`DirectiveStatus`** / **`TaskLifecycleState`** + **`GateStatus`**; **`STATE_001_PLAN.md`**. | **ISSUED** — **STATE_001_PLAN `READY`** | 2026-04-30 |
+| W-036 | **APP_LLD_001** | LLD — epics + directives | **`APP_LLD_001.md`** **ACCEPTED** program **2026-04-30**; manifest + logs aligned. | **ACCEPTED** | 2026-04-30 |
+| W-035 | **DOC_APP_BLUEPRINT_ALIGNMENT** | Docs — manifest + guides | **`APP_BLUEPRINT_001`** in **`TRIDENT_DOCUMENT_MANIFEST_v1_0.md`**; Master Guide **§2.1**; **`WORKFLOW_LOG.md`** ACCEPT rows; **`APP_LLD_001_PLAN.md`** placeholder. **No code.** | **ACCEPTED** — **LLD-only** build-planning unblock | 2026-04-30 |
+| W-034 | **APP_BLUEPRINT_001** | Product blueprint acceptance | Canonical **`trident/docs/APP_BLUEPRINT_001.md`** + addenda (Workbench UI/workflow, shared thread, RAG, model cadre, project structure, prerequisites, environment governance, state engine). | **ACCEPTED AS PRODUCT BLUEPRINT** | 2026-04-30 |
+| W-033 | **APP_BLUEPRINT_PREREQUISITES_ADDENDUM** | Blueprint return | Prerequisites / environment readiness gate; logged **ACCEPTED** in **`WORKFLOW_LOG.md`**. | **ACCEPTED** | 2026-04-30 |
+| W-032 | **APP_BLUEPRINT_STATE_ENGINE_ADDENDUM** | Blueprint return | State engine enforcement design; logged **ACCEPTED** in **`WORKFLOW_LOG.md`**. | **ACCEPTED** | 2026-04-30 |
 | W-031 | **FIX_003** | Phase 2 — Read + Plan | Step 1 Read + Step 2 Plan: heartbeat **`last_heartbeat_at`**, new statuses, **`POST /locks/heartbeat`**, stale lazy transition, recovery/takeover/force-release, audits, IDE/web visibility, tests. **`FIX_003_PLAN` `READY`**. Log: **`WORKFLOW_LOG.md`** §FIX_003. **Commit:** **`d9be1bf`**. | **PENDING** — ACK **`FIX_003_PLAN`** | 2026-04-30 |
 | W-030 | **100M** | Gate — architect ACK block | Architect **ACCEPT** engineering block; **`100M`** **`BLOCKED_CONFIRMED`**. **Commit:** **`a0b89de`**. | **BLOCKED_CONFIRMED** — superseded by **FIX_003** issuance (**Option A**) | 2026-04-30 |
 | W-029 | **100M** | Phase 2 — Read + Plan | **Step 1 Read** + **Step 2 Plan:** **`100M`** vs **`simulated-mutation`**; **FIX 003** gate. **Commits:** **`695babc`**, **`19ac3be`**. | Superseded by **W-030** confirmation | 2026-04-30 |

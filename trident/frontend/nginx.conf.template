@@ -4,6 +4,7 @@ server {
     index index.html;
 
     # Same-origin API proxy — avoids browser CORS for /v1/* calls (100U).
+    # TRIDENT_NGINX_LOCATION_API from docker-entrypoint: `/trident/api/` when TRIDENT_BASE_PATH=/trident, else `/api/`.
     location ${TRIDENT_NGINX_LOCATION_API} {
         proxy_pass http://trident-api:8000${TRIDENT_NGINX_LOCATION_API};
         proxy_http_version 1.1;

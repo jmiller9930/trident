@@ -29,6 +29,17 @@ class DirectiveRepository:
         q = select(Directive).order_by(Directive.created_at.desc()).limit(limit)
         return list(self._session.scalars(q).all())
 
+    def list_summaries_for_projects(self, project_ids: list[uuid.UUID], *, limit: int = 100) -> list[Directive]:
+        if not project_ids:
+            return []
+        q = (
+            select(Directive)
+            .where(Directive.project_id.in_(project_ids))
+            .order_by(Directive.created_at.desc())
+            .limit(limit)
+        )
+        return list(self._session.scalars(q).all())
+
     def create_directive_and_initialize(self, body: CreateDirectiveRequest) -> tuple[Directive, TaskLedger, GraphState]:
         ws = self._session.get(Workspace, body.workspace_id)
         if ws is None:

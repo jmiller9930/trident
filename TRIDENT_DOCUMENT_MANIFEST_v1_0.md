@@ -71,7 +71,50 @@ The system is governed by these non-negotiable principles:
       each agent role may have its own assigned model profile
     ```
 
-    **Required role → profile mapping (conceptual):** Architect → reasoning; Engineer → coding; Reviewer → validation/review; Debugger → diagnostic/code-fix; Docs → documentation/summarization. **External OpenAI/API models are fallback only**, not the default execution path. **Hardware planning target:** RTX 6000–class GPU, **32GB VRAM**; **local-first** runtime. **Provisional model names** are candidates until **100R** benchmarks and health checks validate fit — do not treat them as locked production choices. **100I** validates only that the **current design does not block** future per-agent assignment; **100I does not implement** model routing. **100R** owns registry, per-agent assignment, both modes, local-first routing, external fallback policy, fallback-reason logging, token/cost logging, model health checks, and VRAM-fit validation. Model routing MUST NOT be implemented in Nike, MCP, or the IDE.
+    **Required role → profile mapping (conceptual):** Architect → reasoning; Engineer → coding; Reviewer → validation/review; Debugger → diagnostic/code-fix; Docs → documentation/summarization. **External OpenAI/API models are fallback only**, not the default execution path. **Hardware planning target:** RTX 6000–class GPU, **32GB VRAM**; **local-first** runtime. **Provisional model names** are candidates until **100R** benchmarks and health checks validate fit — do not treat them as locked production choices. **100I** validates only that the **current design does not block** future per-agent assignment; **100I does not implement** model routing.     **100R** owns registry, per-agent assignment, both modes, local-first routing, external fallback policy, fallback-reason logging, token/cost logging, model health checks, and VRAM-fit validation. Model routing MUST NOT be implemented in Nike, MCP, or the IDE.
+
+15. **Product blueprint (`APP_BLUEPRINT_001`):** The canonical **product** architecture for forward UX, gates, and enforcement is documented in **`trident/docs/APP_BLUEPRINT_001.md`** (addenda: Model Readiness + Agent Brain Assignment; RAG / shared context; VS Code Workbench UI + governed development loop; project type → architecture → canonical structure; **prerequisites / environment readiness**; **environment governance**; **state engine**). Engineering must treat this file as the **single product blueprint** alongside LLDs and implementation directives. **Program acceptance** of blueprint addenda (**STATE_ENGINE**, **PREREQUISITES**) is recorded in **`trident/docs/WORKFLOW_LOG.md`** and receipt rows in **`trident/docs/DIRECTIVE_WORKFLOW_LOG.md`** — update manifest status lines when program signs.
+
+---
+
+## 2.1 Product blueprint registry (APP_BLUEPRINT_001)
+
+#### TRIDENT-PRODUCT-BLUEPRINT-APP_BLUEPRINT_001
+**File:** `trident/docs/APP_BLUEPRINT_001.md`  
+**Type:** Product blueprint (HLD-level product contract — **unified single document**)  
+**Status:** **Canonical product blueprint** — **`APP_BLUEPRINT_001_UNIFIED_REWRITE`** (**ISSUED** / content **READY**); prior append-only addenda **superseded** by unified §§1–15 in-file  
+**Purpose:** End-to-end product model: backend-authoritative workspace/project; thin VS Code client; **shared chat** + **`#architect`** intake; collaboration roles; normalization pipeline; **project-scoped RAG** (no cross-project/global fallback); **state machine**; structure/scaffold rules; **environment governance**; **model cadre readiness**; patch/proof/bug-check loops; **§13 API gap** inventory.  
+**Depends on:** Manifest principles §2; **`APP_LLD_001`** (**ACCEPTED**) for engineering decomposition.  
+**Produces:** Contracts for implementation directives and API completion.
+
+#### TRIDENT-IMPLEMENTATION-DESIGN-APP_IMPLEMENTATION_DESIGN_001
+**File:** `trident/docs/APP_IMPLEMENTATION_DESIGN_001.md`  
+**Type:** System implementation design (technical — services, data, APIs, state machine, RAG, intake, UI contract)  
+**Status:** **ISSUED** / document **READY**  
+**Purpose:** Translates **`APP_BLUEPRINT_001`** into **implementable** boundaries without restating product prose; defines concrete tables (**+** net-new), endpoint matrix, state transition discipline, context isolation guarantees.  
+**Depends on:** **`APP_BLUEPRINT_001`** (unified); **`APP_LLD_001`**; codebase **`STATE_001`**.  
+**Produces:** Build-ready specs for implementation directives and engineering execution.
+
+#### TRIDENT-IMPLEMENTATION-DESIGN-REVIEW-APP_IMPLEMENTATION_DESIGN_001_REVIEW
+**File:** `trident/docs/APP_IMPLEMENTATION_DESIGN_001_REVIEW.md`  
+**Type:** Engineering validation / build-authorization input  
+**Status:** **ISSUED** / **READY**  
+**Purpose:** Validates **`APP_IMPLEMENTATION_DESIGN_001`** against **`APP_BLUEPRINT_001`**; gap closure rules; cross-system consistency; failure modes; **READY_FOR_IMPLEMENTATION** with controlled sequencing — **no code**.  
+
+#### Blueprint addenda — acceptance tracking
+| Addendum | Role | Program status |
+|----------|------|----------------|
+| **`APP_BLUEPRINT_STATE_ENGINE_ADDENDUM`** | Enforcement layer: gates, transitions, UI aggregates, LangGraph/Nike integration | **ACCEPTED** — recorded **`trident/docs/WORKFLOW_LOG.md`** (`DOC_APP_BLUEPRINT_ALIGNMENT`) |
+| **`APP_BLUEPRINT_PREREQUISITES_ADDENDUM`** | Prerequisites / environment readiness checklist | **ACCEPTED** — recorded **`WORKFLOW_LOG.md`** (`DOC_APP_BLUEPRINT_ALIGNMENT`) |
+
+#### TRIDENT-LLD-APP_LLD_001
+**File:** `trident/docs/APP_LLD_001.md`  
+**Type:** LLD (post-blueprint engineering decomposition)  
+**Status:** **ACCEPTED** — program **2026-04-30**; implementation via issued directives (**STATE_001** first)  
+**Purpose:** Epics **E01–E10**, numbered implementation directives (**WB_***, **THR_***, **STATE_***, **GATE_***, **PROJ_***, **RAG_***, **MODEL_***, **PATCH_***, **PROOF_***, **QA_***), strict phased **build order**, dependency graph; aligns blueprint with state engine, gates, env governance, UI, RAG, cadre, agents, patch, proof, QA.  
+**Depends on:** **`APP_BLUEPRINT_001`** (accepted); blueprint addenda **ACCEPTED** per **`WORKFLOW_LOG.md`**.  
+**Produces:** Scoped **`TRIDENT_IMPLEMENTATION_DIRECTIVE_*`** issuance targets.  
+**Pointer:** `trident/docs/APP_LLD_001_PLAN.md` → canonical **`APP_LLD_001.md`**.
 
 ---
 
@@ -239,8 +282,62 @@ Each document must:
 
 ## 5. Current Next Document
 
-The next document after this manifest and Directive 000B is:
+### 5.1 Forward path (post–product-blueprint)
+
+After **`APP_BLUEPRINT_001`** is **accepted as product blueprint** (program log: **`WORKFLOW_LOG.md`** — `DOC_APP_BLUEPRINT_ALIGNMENT`):
+
+```text
+APP_BLUEPRINT_001 → LLD (e.g. APP_LLD_001) → EPICS → IMPLEMENTATION DIRECTIVES
+```
+
+- **LLD document:** `trident/docs/APP_LLD_001.md` — **APP_LLD_001** (**ACCEPTED** program **2026-04-30**); pointer `trident/docs/APP_LLD_001_PLAN.md`.  
+- **Implementation** for blueprint-scoped work proceeds under **issued implementation directives** (see **Master Execution Guide v1.1 §2.1**). **STATE_001** — state schema foundation — **ISSUED / READY** per `STATE_001_PLAN.md`.
+
+Update this subsection when **`APP_LLD_001`** is superseded by a revised LLD revision id.
+
+### 5.2 Foundation LLD sequence (design corpus)
+
+The next document in the **traditional** LLD sequence after **000B** remains:
 
 **TRIDENT-DIRECTIVE-000C — Memory System and Blackboard Architecture**
 
-Do not issue implementation code before 000C, 000D, 000E, 000F, 000G, and 000H are completed and accepted.
+Do not issue implementation code that depends on missing **000C–000H** acceptance without explicit program waiver. The product blueprint does **not** replace foundational LLDs; it **aligns** product UX and enforcement with them.
+
+---
+
+## 6. Directive Registry and Naming Standard (added 2026-05-01)
+
+**Canonical directive registry:** `trident/docs/TRIDENT_DIRECTIVE_REGISTRY.md`
+
+### Naming standard (effective 2026-05-01)
+
+```
+TRIDENT_<DOMAIN>_<SEQUENCE>
+```
+
+Old-style `TRIDENT_IMPLEMENTATION_DIRECTIVE_*` names are **deprecated** but **retained as historical aliases** and must never be erased.
+
+### Implemented directive family (backfilled 2026-05-01)
+
+| Canonical | Domain | Status | Migration |
+|-----------|--------|--------|-----------|
+| `TRIDENT_IMPL_001` | Control plane | PASS / ACCEPTED | `impl001001` |
+| `TRIDENT_MODEL_ROUTER_001` | Model plane wiring | PASS / ACCEPTED | _(settings only)_ |
+| `TRIDENT_MODEL_ROUTER_002` | Model plane wiring | PASS / ACCEPTED | _(settings only)_ |
+| `TRIDENT_ONBOARD_001` | Onboarding schema | PASS / ACCEPTED | `onboard001001` |
+| `TRIDENT_ONBOARD_002` | Onboarding scan | PASS / ACCEPTED | _(service only)_ |
+| `TRIDENT_GITHUB_001` | GitHub provider | PASS / ACCEPTED | _(service only)_ |
+| `TRIDENT_GITHUB_002` | GitHub schema | PASS / ACCEPTED | `github002001` |
+| `TRIDENT_GITHUB_003` | GitHub API | PASS / ACCEPTED | _(service only)_ |
+| `TRIDENT_GITHUB_004` | GitHub directive branch | PASS / ACCEPTED | _(service only)_ |
+| `TRIDENT_GITHUB_005` | GitHub commit push | PASS / ACCEPTED | _(service only)_ |
+| `TRIDENT_PATCH_001` | Patch proposals | PASS / ACCEPTED | `patch001001` |
+| `TRIDENT_PATCH_002` | Patch execution | PASS / ACCEPTED | `patch002001` |
+| `TRIDENT_VALIDATION_001` | Validation tracking | PASS / ACCEPTED | `valid001001` |
+| `TRIDENT_SIGNOFF_001` | Sign-off + closure | PASS / ACCEPTED | `signoff001001` |
+| `TRIDENT_STATUS_001` | Execution state | PASS / ACCEPTED | _(read-only)_ |
+| `TRIDENT_VSCODE_001` | VS Code extension | PASS / ACCEPTED | _(TS only)_ |
+| `TRIDENT_REGISTRY_CLEANUP_001` | Registry docs | PASS | _(docs only)_ |
+
+**Current migration head:** `signoff001001`  
+**Current test suite:** 404 passed, 3 skipped (2026-05-01)

@@ -43,7 +43,7 @@ def ttl_client(sqlite_engine):
         finally:
             db.close()
 
-    app = build_app(Settings(base_path="", lock_ttl_sec=7200))
+    app = build_app(Settings(base_path="", lock_ttl_sec=7200, lock_heartbeat_miss_sec=0))
     app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as tc:
         yield tc

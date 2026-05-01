@@ -112,6 +112,21 @@ Phase 2 — IDE (after **100U** and §4 prerequisites):
 
 **Design authority:** LLD directives **000A–000P** (including **000P — Nike**) and **Manifest v1.0** must be accepted before code tracks **100A+**. **Fix directives 001–005** apply at the injection points in §5—not optional patches.
 
+### 2.1 Post–product-blueprint execution path (forward work)
+
+For product behavior defined in **`trident/docs/APP_BLUEPRINT_001.md`** (Workbench UI, shared thread, RAG, model cadre readiness, project type → architecture → structure, prerequisite gate, environment governance, state engine), engineering follows:
+
+```text
+APP_BLUEPRINT_001 (accepted as product blueprint)
+  → LLD issued + accepted (`trident/docs/APP_LLD_001.md` — **APP_LLD_001**; pointer `APP_LLD_001_PLAN.md`)
+  → EPICS / ticket breakdown
+  → IMPLEMENTATION DIRECTIVES (per epic / scope)
+```
+
+**Hard rule:** **No implementation begins** until **LLD is issued and accepted** for the corresponding scope. Blueprint text alone is not authorization to ship code; **LLD + directives** define buildable scope, tests, and proof.
+
+**Program log:** Acceptance of **`APP_BLUEPRINT_001`**, **`APP_BLUEPRINT_STATE_ENGINE_ADDENDUM`**, and **`APP_BLUEPRINT_PREREQUISITES_ADDENDUM`** — see **`trident/docs/WORKFLOW_LOG.md`** (`DOC_APP_BLUEPRINT_ALIGNMENT`). **Build planning** is **unblocked for LLD only** until LLD acceptance and epic/directive issuance.
+
 ---
 
 ## 3. Inline Dependencies (Implementation Directives)

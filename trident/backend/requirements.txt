@@ -8,3 +8,6 @@ alembic>=1.13.0
 psycopg2-binary>=2.9.9
 langgraph==0.2.76
 chromadb>=0.5.23,<0.6
+PyJWT>=2.8.0
+bcrypt>=4.0.0
+email-validator>=2.1.0

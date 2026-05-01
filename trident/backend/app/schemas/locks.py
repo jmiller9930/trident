@@ -64,4 +64,32 @@ class LockActiveResponse(BaseModel):
     locked_by_agent_role: str
     lock_status: str
     expires_at: datetime | None = None
+    last_heartbeat_at: datetime | None = None
+
+
+class LockHeartbeatResponse(BaseModel):
+    lock_id: uuid.UUID
+    lock_status: str
+
+
+class LockForceReleaseRequest(BaseModel):
+    lock_id: uuid.UUID
+    project_id: uuid.UUID
+    admin_user_id: uuid.UUID
+
+
+class LockForceReleaseResponse(BaseModel):
+    lock_id: uuid.UUID
+    lock_status: str
+
+
+class LockPathStatusResponse(BaseModel):
+    """Latest lock visibility for path (FIX 003); read-only."""
+
+    present: bool
+    lock_id: uuid.UUID | None = None
+    lock_status: str | None = None
+    directive_id: uuid.UUID | None = None
+    locked_by_user_id: uuid.UUID | None = None
+    last_heartbeat_at: datetime | None = None
 

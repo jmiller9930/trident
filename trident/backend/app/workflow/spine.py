@@ -14,6 +14,7 @@ from typing import Any
 from langgraph.graph import END, START, StateGraph
 from sqlalchemy.orm import Session
 
+from app.config.settings import Settings
 from app.memory.constants import MemoryKind
 from app.memory.memory_writer import MemoryWriter
 from app.models.enums import AgentRole, DirectiveStatus, TaskLifecycleState
@@ -40,7 +41,7 @@ def _spine_memory_checkpoint(session: Session, state: SpineState, directive: Dir
     )
 
 
-def compile_spine(session: Session):
+def compile_spine(session: Session, *, model_router_settings: Settings | None = None):
     """Return a compiled graph that closes over `session` (one compile per request)."""
 
     def architect(state: SpineState) -> dict[str, Any]:
@@ -78,7 +79,14 @@ def compile_spine(session: Session):
             to_ledger=TaskLifecycleState.IN_PROGRESS,
             agent=AgentRole.ENGINEER,
         )
-        out = run_engineer_agent_phase(session, directive, ledger, graph, state)
+        out = run_engineer_agent_phase(
+            session,
+            directive,
+            ledger,
+            graph,
+            state,
+            model_router_settings=model_router_settings,
+        )
         if out.memory_write is None:
             _spine_memory_checkpoint(session, state, directive, ledger, "engineer")
         return {"nodes_executed": ["engineer"]}
@@ -186,6 +194,7 @@ def run_spine_workflow(
     directive_id: uuid.UUID,
     *,
     reviewer_rejections_remaining: int = 0,
+    model_router_settings: Settings | None = None,
 ) -> SpineState:
     """Single supported entrypoint for graph execution (100C bypass guard)."""
     ctx = load_spine_context(session, directive_id)
@@ -202,7 +211,7 @@ def run_spine_workflow(
     gs.updated_at = _utcnow()
     session.flush()
 
-    graph = compile_spine(session)
+    graph = compile_spine(session, model_router_settings=model_router_settings)
     try:
         return graph.invoke(
             {

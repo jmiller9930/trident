@@ -1204,4 +1204,163 @@ Host **`curl http://127.0.0.1:8000/api/{health,ready,version}`** returned **FAIL
 
 ---
 
+## Directive: DOC_APP_BLUEPRINT_ALIGNMENT
+
+**Status:** PASS
+
+### Summary
+
+Documentation and manifest alignment with completed **`APP_BLUEPRINT_001`** product blueprint before implementation waves tied to that blueprint.
+
+### Program decisions (recorded herein)
+
+| Item | Decision |
+|------|----------|
+| **`APP_BLUEPRINT_STATE_ENGINE_ADDENDUM`** | **ACCEPTED** |
+| **`APP_BLUEPRINT_PREREQUISITES_ADDENDUM`** | **ACCEPTED** |
+| **`APP_BLUEPRINT_001`** | **ACCEPTED AS PRODUCT BLUEPRINT** |
+| **Build planning** | **UNBLOCKED FOR LLD ONLY** — implementation still requires **LLD issued + accepted** (see **`APP_LLD_001_PLAN.md`**, **Master Execution Guide v1.1 §2.1**) |
+
+### Files changed
+
+- `TRIDENT_DOCUMENT_MANIFEST_v1_0.md`
+- `TRIDENT_MASTER_EXECUTION_GUIDE_v1_1.md`
+- `trident/docs/WORKFLOW_LOG.md` (this section)
+- `trident/docs/DIRECTIVE_WORKFLOW_LOG.md`
+- `trident/docs/APP_LLD_001_PLAN.md` (new — placeholder)
+
+### Proof
+
+Manifest references **`trident/docs/APP_BLUEPRINT_001.md`** as canonical product blueprint; blueprint pending register updated to returned addenda; execution guide §2.1 defines **APP_BLUEPRINT_001 → LLD → EPICS → IMPLEMENTATION DIRECTIVES**.
+
+### Gate decision
+
+**PASS** — doc alignment complete; **no code build** under this directive.
+
+### Unlock
+
+LLD planning and issuance may proceed; implementation directives follow **LLD acceptance**.
+
+---
+
+## Directive: APP_LLD_001
+
+**Status:** READY (document); **ISSUED** until program **ACCEPT**
+
+### Summary
+
+Low-Level Design decomposition of **`APP_BLUEPRINT_001`**: **10 epics**, **implementation directive IDs** per epic, **phased build order** (A–J), **dependencies**, **data model plan**, **API plan** (existing vs new), **UI plan**, **phased rollout** (product Phase 1–4), **system risks**, **estimated work** + critical path; alignment with **100*** spine.
+
+### Files changed
+
+- `trident/docs/APP_LLD_001.md` (canonical LLD — expanded §§6–11 + RETURN)
+- `trident/docs/APP_LLD_001_PLAN.md` (pointer to canonical)
+- `TRIDENT_DOCUMENT_MANIFEST_v1_0.md` — §2.1 **TRIDENT-LLD-APP_LLD_001**; §5.1 forward path
+- `TRIDENT_MASTER_EXECUTION_GUIDE_v1_1.md` — §2.1 LLD path
+- `trident/docs/APP_BLUEPRINT_001.md` — blueprint register **Next** line
+
+### Proof
+
+N/A — documentation-only issuance.
+
+### Gate decision
+
+**READY** — LLD content complete (§§1–14 + RETURN); **program ACCEPT** still required to authorize implementation waves per epic/directive.
+
+### Unlock
+
+After **program ACCEPT**: issue **`TRIDENT_IMPLEMENTATION_DIRECTIVE_*`** per **`APP_LLD_001.md`** slices.
+
+---
+
+## Program record: APP_LLD_001 ACCEPTED
+
+**Date:** 2026-04-30  
+
+**Decision:** **`APP_LLD_001`** (**`trident/docs/APP_LLD_001.md`**) **ACCEPTED**. Implementation **only** through issued implementation directives (starting **STATE_001**).
+
+**Accepted files (review bundle):** `APP_LLD_001.md`, `TRIDENT_DOCUMENT_MANIFEST_v1_0.md`, `WORKFLOW_LOG.md`, `DIRECTIVE_WORKFLOW_LOG.md`.
+
+**Open questions (defer to first implementation directives):** REST namespace `/v1/projects` vs `/v1/workbench`; project table vs `workspace_id` bridge.
+
+---
+
+## Directive: STATE_001 — State Schema + Transition Foundation
+
+**Status:** PASS (schema slice delivered); **STATE_001_PLAN** **READY**
+
+### Summary
+
+Additive blueprint-aligned **`DirectiveStatus`** / **`TaskLifecycleState`** values; new **`GateStatus`**, **`ProjectGateType`**, **`StateTransitionActorType`**; tables **`state_transition_log`**, **`project_gates`**; Alembic **`state001001`**. No transition service, UI, or agent logic changes.
+
+### Schema / migration
+
+- `trident/backend/alembic/versions/state001001_state_engine_foundation.py`
+- `app/models/state_transition_log.py`, `app/models/project_gate.py`, `app/models/state_enums.py`
+- `app/models/enums.py` — extended statuses
+
+### Tests
+
+- `tests/test_state001_enums.py`
+
+### Plan artifact
+
+- `trident/docs/STATE_001_PLAN.md`
+
+### Proof
+
+`pytest tests/test_state001_enums.py tests/test_langgraph_spine.py tests/test_persistence.py` — pass locally.
+
+### Gate decision
+
+**READY** — migrate DB with `alembic upgrade head`; **STATE_002** wires **StateTransitionService**.
+
+---
+
+## Canonical Directive Naming Standard (established 2026-05-01)
+
+**Directive:** `TRIDENT_REGISTRY_CLEANUP_001` (alias: `TRIDENT_DIRECTIVE_REGISTRY_CLEANUP_001`)  
+**Status:** PASS  
+
+### Standard
+
+All directives issued after **2026-05-01** must use canonical naming:
+
+```
+TRIDENT_<DOMAIN>_<SEQUENCE>
+```
+
+Old-style `TRIDENT_IMPLEMENTATION_DIRECTIVE_*` names are **deprecated** and **retained as historical aliases only** — they must never be erased from existing logs.
+
+### Canonical Registry
+
+**`trident/docs/TRIDENT_DIRECTIVE_REGISTRY.md`** — single source of truth for all issued directives, canonical names, historical aliases, migration heads, test counts, and files changed.
+
+### Backfill summary (W-038 to W-056)
+
+| Canonical | Historical alias | Status |
+|-----------|-----------------|--------|
+| `TRIDENT_IMPL_001` | `TRIDENT_IMPLEMENTATION_DIRECTIVE_001` | PASS / ACCEPTED |
+| `TRIDENT_MODEL_ROUTER_001` | `TRIDENT_IMPLEMENTATION_DIRECTIVE_MODEL_ROUTER_001` | PASS / ACCEPTED |
+| `TRIDENT_MODEL_ROUTER_002` | `TRIDENT_IMPLEMENTATION_DIRECTIVE_MODEL_ROUTER_002` | PASS / ACCEPTED |
+| `TRIDENT_ONBOARD_001` | `TRIDENT_IMPLEMENTATION_DIRECTIVE_ONBOARD_001` | PASS / ACCEPTED |
+| `TRIDENT_ONBOARD_002` | `TRIDENT_IMPLEMENTATION_DIRECTIVE_ONBOARD_002` | PASS / ACCEPTED |
+| `TRIDENT_GITHUB_001` | `TRIDENT_IMPLEMENTATION_DIRECTIVE_GITHUB_001` | PASS / ACCEPTED |
+| `TRIDENT_GITHUB_002` | `TRIDENT_IMPLEMENTATION_DIRECTIVE_GITHUB_002` | PASS / ACCEPTED |
+| `TRIDENT_GITHUB_003` | `TRIDENT_IMPLEMENTATION_DIRECTIVE_GITHUB_003` | PASS / ACCEPTED |
+| `TRIDENT_GITHUB_004` | `TRIDENT_IMPLEMENTATION_DIRECTIVE_GITHUB_004` | PASS / ACCEPTED |
+| `TRIDENT_GITHUB_005` | `TRIDENT_IMPLEMENTATION_DIRECTIVE_GITHUB_005` | PASS / ACCEPTED |
+| `TRIDENT_PATCH_001` | `TRIDENT_IMPLEMENTATION_DIRECTIVE_PATCH_001` | PASS / ACCEPTED |
+| `TRIDENT_PATCH_002` | `TRIDENT_IMPLEMENTATION_DIRECTIVE_PATCH_002` | PASS / ACCEPTED |
+| `TRIDENT_VALIDATION_001` | `TRIDENT_IMPLEMENTATION_DIRECTIVE_VALIDATION_001` | PASS / ACCEPTED |
+| `TRIDENT_SIGNOFF_001` | `TRIDENT_IMPLEMENTATION_DIRECTIVE_SIGNOFF_001` | PASS / ACCEPTED |
+| `TRIDENT_STATUS_001` | `TRIDENT_IMPLEMENTATION_DIRECTIVE_STATUS_001` | PASS / ACCEPTED |
+| `TRIDENT_VSCODE_001` | `TRIDENT_IMPLEMENTATION_DIRECTIVE_VSCODE_001` | PASS / ACCEPTED |
+| `TRIDENT_REGISTRY_CLEANUP_001` | `TRIDENT_DIRECTIVE_REGISTRY_CLEANUP_001` | PASS |
+
+**Current migration chain head:** `signoff001001`  
+**Current test suite:** 404 passed, 3 skipped (2026-05-01)
+
+---
+
 END

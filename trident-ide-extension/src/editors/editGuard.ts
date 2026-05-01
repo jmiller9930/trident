@@ -2,7 +2,13 @@ import * as vscode from "vscode";
 import { TridentClient } from "../api/tridentClient";
 import { LockClient } from "../locking/lockClient";
 import { relativePathIfGoverned } from "../locking/lockInterceptor";
-import { getGovernanceIdentity, isEditGovernanceEnabled } from "../utils/config";
+import {
+  getGovernanceIdentity,
+  getLockHeartbeatIntervalSec,
+  getPatchWorkflowRequired,
+  isEditGovernanceEnabled,
+} from "../utils/config";
+import { isPatchApplyInProgress } from "../patch/patchApplyScope";
 
 const DEBOUNCE_MS = 450;
 
@@ -17,6 +23,46 @@ export function registerEditGuard(
   const baseline = new Map<string, string>();
   const timers = new Map<string, ReturnType<typeof setTimeout>>();
   const held = new Map<string, Held>();
+  let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
+
+  function stopLockHeartbeat(): void {
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = undefined;
+    }
+  }
+
+  function syncLockHeartbeatTimer(): void {
+    const sec = getLockHeartbeatIntervalSec();
+    stopLockHeartbeat();
+    if (sec <= 0 || held.size === 0) {
+      return;
+    }
+    heartbeatTimer = setInterval(() => {
+      void sendHeldHeartbeats();
+    }, sec * 1000);
+  }
+
+  async function sendHeldHeartbeats(): Promise<void> {
+    const id = getGovernanceIdentity();
+    if (!id || held.size === 0) {
+      return;
+    }
+    for (const [, rec] of held) {
+      try {
+        await locks.heartbeat({
+          lock_id: rec.lockId,
+          project_id: id.projectId,
+          directive_id: rec.directiveId,
+          agent_role: id.agentRole,
+          user_id: id.userId,
+          file_path: rec.filePath,
+        });
+      } catch (e) {
+        log.appendLine(`heartbeat failed (${rec.filePath}): ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+  }
 
   function uriKey(u: vscode.Uri): string {
     return u.toString();
@@ -126,6 +172,7 @@ export function registerEditGuard(
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("trident")) {
         seedBaselines();
+        syncLockHeartbeatTimer();
       }
     }),
     vscode.workspace.onDidOpenTextDocument((doc) => {
@@ -137,6 +184,10 @@ export function registerEditGuard(
     vscode.workspace.onDidChangeTextDocument((ev) => {
       const doc = ev.document;
       if (!governanceApplies(doc)) {
+        return;
+      }
+      if (getPatchWorkflowRequired() && !isPatchApplyInProgress()) {
+        void revertToBaseline(doc, "Patch workflow required — use Trident: Patch workflow");
         return;
       }
       scheduleVerify(doc);
@@ -190,6 +241,8 @@ export function registerEditGuard(
           filePath: rel,
           directiveId: dir,
         });
+        syncLockHeartbeatTimer();
+        void sendHeldHeartbeats();
         baseline.set(uriKey(editor.document.uri), editor.document.getText());
         void vscode.window.showInformationMessage(`Trident: lock acquired for ${rel}`);
         log.appendLine(`acquired lock ${res.lock_id} ${rel}`);
@@ -226,13 +279,15 @@ export function registerEditGuard(
           file_path: rel,
         });
         held.delete(uriKey(editor.document.uri));
+        syncLockHeartbeatTimer();
         void vscode.window.showInformationMessage(`Trident: lock released for ${rel}`);
         log.appendLine(`released lock ${lockId} ${rel}`);
       } catch (e) {
         void vscode.window.showErrorMessage(e instanceof Error ? e.message : String(e));
       }
     }),
-    log
+    log,
+    { dispose: stopLockHeartbeat }
   );
 
   return log;

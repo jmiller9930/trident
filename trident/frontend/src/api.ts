@@ -8,17 +8,34 @@ export function normalizeBasePath(raw: string | undefined): string {
 
 /**
  * JSON API prefix (no trailing slash).
- * - Same-origin: `origin + BASE_PATH + /api` (nginx proxy), when `PUBLIC_BASE_URL` is empty.
- * - Cross-origin: `PUBLIC_BASE_URL + /api` — URL must already be the API mount (e.g. `https://host/trident`),
- *   do not append `BASE_PATH` again (avoids `/trident/trident/api` when both are set).
+ * - Preferred (compose + nginx on :3000): `TRIDENT_PUBLIC_BASE_URL` **empty**, `TRIDENT_BASE_PATH=/trident`
+ *   → `origin + /trident/api` (same-origin proxy).
+ * - If `PUBLIC_BASE_URL` is set but its **origin** differs from the page (e.g. `https://host/trident` while the UI is
+ *   `http://host:3000`), fetch hits cross-origin / mixed content and fails with **NetworkError** — we ignore `pub`
+ *   and use same-origin `origin + BASE_PATH + /api` instead.
+ * - Same-origin `PUBLIC_BASE_URL` (rare) still uses `pub + /api` without duplicating `BASE_PATH`.
  */
 export function getApiBase(): string {
-  const pub = (window.__TRIDENT_PUBLIC_BASE_URL__ ?? "").trim();
+  const pubRaw = (window.__TRIDENT_PUBLIC_BASE_URL__ ?? "").trim();
   const bp = normalizeBasePath(window.__TRIDENT_BASE_PATH__);
-  if (pub) {
-    return `${pub.replace(/\/+$/, "")}/api`;
+  const sameOriginDefault = `${window.location.origin}${bp}/api`;
+
+  if (!pubRaw) {
+    return sameOriginDefault;
   }
-  return `${window.location.origin}${bp}/api`;
+
+  let pubOrigin: string;
+  try {
+    pubOrigin = new URL(pubRaw).origin;
+  } catch {
+    return sameOriginDefault;
+  }
+
+  if (pubOrigin !== window.location.origin) {
+    return sameOriginDefault;
+  }
+
+  return `${pubRaw.replace(/\/+$/, "")}/api`;
 }
 
 export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {

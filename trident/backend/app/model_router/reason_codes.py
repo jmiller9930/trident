@@ -1,0 +1,27 @@
+"""FIX 005 §4 — canonical escalation reason taxonomy (model router only)."""
+
+from __future__ import annotations
+
+from enum import StrEnum
+
+
+class Fix005EscalationReason(StrEnum):
+    LOW_CONFIDENCE = "LOW_CONFIDENCE"
+    INCOMPLETE_RESPONSE = "INCOMPLETE_RESPONSE"
+    HIGH_REASONING_REQUIRED = "HIGH_REASONING_REQUIRED"
+    VALIDATION_REQUIRED = "VALIDATION_REQUIRED"
+    LOCAL_MODEL_UNAVAILABLE = "LOCAL_MODEL_UNAVAILABLE"
+    CONTEXT_WINDOW_LIMIT = "CONTEXT_WINDOW_LIMIT"
+    USER_APPROVED_ESCALATION = "USER_APPROVED_ESCALATION"
+
+
+class Fix005BlockReason(StrEnum):
+    EXTERNAL_ESCALATION_DISABLED = "BLOCKED_EXTERNAL_DISABLED"
+    BUDGET_EXCEEDED = "BLOCKED_BUDGET_EXCEEDED"
+    MODEL_PLANE_UNAVAILABLE = "BLOCKED_MODEL_PLANE_UNAVAILABLE"
+
+
+class Fix005LocalOutcome(StrEnum):
+    """Non-external completion — not an escalation trigger."""
+
+    LOCAL_COMPLETED = "LOCAL_COMPLETED"

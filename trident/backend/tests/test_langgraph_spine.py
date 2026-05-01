@@ -113,18 +113,20 @@ def test_nodes_not_public_api_surface() -> None:
     assert hasattr(spine_mod, "run_spine_workflow")
 
 
-def test_api_workflow_run(client, minimal_project_ids) -> None:
+def test_api_workflow_run(client, minimal_project_ids, auth_headers) -> None:
     ids = minimal_project_ids
     payload = {
-        "workspace_id": str(ids["workspace_id"]),
         "project_id": str(ids["project_id"]),
         "title": "API spine",
-        "created_by_user_id": str(ids["user_id"]),
         "status": "DRAFT",
     }
-    c = client.post("/api/v1/directives/", json=payload)
+    c = client.post("/api/v1/directives/", json=payload, headers=auth_headers)
+    assert c.status_code == 200, c.text
     did = c.json()["directive"]["id"]
-    r = client.post(f"/api/v1/directives/{did}/workflow/run?reviewer_rejections_remaining=0")
+    r = client.post(
+        f"/api/v1/directives/{did}/workflow/run?reviewer_rejections_remaining=0",
+        headers=auth_headers,
+    )
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["final_ledger_state"] == "CLOSED"

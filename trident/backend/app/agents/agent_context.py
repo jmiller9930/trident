@@ -17,3 +17,4 @@ class AgentGraphContext:
     agent_role: AgentRole
     node_name: str
     memory_snapshot: dict[str, Any]
+    model_routing: dict[str, Any] | None = None

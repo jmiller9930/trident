@@ -1,14 +1,18 @@
 {
   "name": "trident-ide-extension",
   "displayName": "Trident",
-  "description": "Trident IDE client — backend-connected sidebar, directives, chat (100K)",
-  "version": "0.1.0",
+  "description": "Trident IDE client — backend-connected sidebar, directives, chat (100K / IDE_002)",
+  "version": "0.2.0",
   "publisher": "trident",
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Other"],
-  "activationEvents": ["onStartupFinished"],
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
@@ -17,12 +21,17 @@
         "trident.apiBaseUrl": {
           "type": "string",
           "default": "http://127.0.0.1:8000",
-          "description": "Trident API origin (no trailing slash). Paths /api/health and /api/v1 are appended."
+          "description": "Trident API origin (no trailing slash)."
+        },
+        "trident.workspaceId": {
+          "type": "string",
+          "default": "",
+          "description": "Backend workspace UUID (required for creating new tasks)."
         },
         "trident.projectId": {
           "type": "string",
           "default": "",
-          "description": "Backend project UUID (required for lock governance)."
+          "description": "Backend project UUID (required for lock governance and task creation)."
         },
         "trident.userId": {
           "type": "string",
@@ -37,7 +46,28 @@
         "trident.editGovernanceEnabled": {
           "type": "boolean",
           "default": true,
-          "description": "When true and project/user IDs are set, enforce backend locks for workspace files (100P)."
+          "description": "When true, enforce backend locks for workspace files (100P)."
+        },
+        "trident.lockHeartbeatIntervalSec": {
+          "type": "number",
+          "default": 60,
+          "minimum": 0,
+          "description": "FIX 003 — lock heartbeat interval (seconds); 0 disables."
+        },
+        "trident.patchWorkflowRequired": {
+          "type": "boolean",
+          "default": false,
+          "description": "100M — when true, block direct typing; edits go through Trident: Patch workflow."
+        },
+        "trident.debugMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "IDE_002 — when true, show raw JSON payloads and UUIDs in panels."
+        },
+        "trident.accessToken": {
+          "type": "string",
+          "default": "",
+          "description": "IMPL_001 — JWT access token for authenticated backend endpoints (execution-state). Set via login. Never commit."
         }
       }
     },
@@ -69,7 +99,7 @@
       },
       {
         "command": "trident.showAgentState",
-        "title": "Trident: Show agent state (JSON)"
+        "title": "Trident: Show agent state"
       },
       {
         "command": "trident.showStatus",
@@ -77,7 +107,7 @@
       },
       {
         "command": "trident.selectDirective",
-        "title": "Trident: Select directive"
+        "title": "Trident: Select task"
       },
       {
         "command": "trident.acquireLock",
@@ -86,16 +116,38 @@
       {
         "command": "trident.releaseLock",
         "title": "Trident: Release lock for active file"
+      },
+      {
+        "command": "trident.patchWorkflow",
+        "title": "Trident: Patch workflow (preview / apply)"
+      },
+      {
+        "command": "trident.createWorkRequest",
+        "title": "Trident: Create new task"
+      },
+      {
+        "command": "trident.showTimeline",
+        "title": "Trident: Show task progress"
+      },
+      {
+        "command": "trident.toggleDebugMode",
+        "title": "Trident: Toggle debug mode"
+      },
+      {
+        "command": "trident.showExecutionState",
+        "title": "Trident: Show execution state"
       }
     ]
   },
   "scripts": {
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package --no-dependencies"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.9.1",
     "typescript": "^5.4.0"
   }
 }

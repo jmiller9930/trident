@@ -33,6 +33,7 @@ def process_ide_chat(
     directive_id: uuid.UUID,
     prompt: str,
     actor_id: str | None,
+    correlation_id: uuid.UUID | None = None,
 ) -> tuple[str, uuid.UUID, uuid.UUID]:
     raw = prompt.strip()
     if not raw:
@@ -44,7 +45,7 @@ def process_ide_chat(
     if d is None:
         raise ValueError("directive_not_found")
 
-    correlation_id = uuid.uuid4()
+    correlation_id = correlation_id if correlation_id is not None else uuid.uuid4()
     prompt_sha = _sha256_hex(raw)
     audit = AuditRepository(session)
 

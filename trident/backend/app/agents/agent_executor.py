@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from sqlalchemy.orm import Session
 
 from app.agents.agent_context import AgentGraphContext
 from app.agents.agent_logger import AgentAuditLogger
 from app.agents.agent_registry import resolve_handler
 from app.agents.schemas import AgentDecisionStatus, AgentOutput
+from app.config.settings import Settings
 from app.memory.memory_reader import MemoryReader
 from app.memory.memory_writer import MemoryWriter
 from app.mcp.mcp_service import MCPService
@@ -15,6 +18,7 @@ from app.models.directive import Directive
 from app.models.enums import AgentRole
 from app.models.graph_state import GraphState
 from app.models.task_ledger import TaskLedger
+from app.model_router.langgraph_hook import invoke_model_router_for_engineer_node
 from app.schemas.mcp import MCPExecuteRequest
 from app.workflow.state import SpineState
 
@@ -36,6 +40,7 @@ class AgentExecutor:
         state: SpineState,
         node_name: str,
         role: AgentRole,
+        model_routing_trace: dict[str, Any] | None = None,
     ) -> AgentOutput:
         handler = resolve_handler(role)
         if handler is None:
@@ -49,6 +54,7 @@ class AgentExecutor:
             agent_role=role,
             node_name=node_name,
             memory_snapshot=snap if isinstance(snap, dict) else {"snapshot": snap},
+            model_routing=model_routing_trace,
         )
 
         self._agents.invocation(directive=directive, ledger=ledger, node_name=node_name, role=role)
@@ -120,7 +126,16 @@ def run_engineer_agent_phase(
     ledger: TaskLedger,
     graph: GraphState,
     state: SpineState,
+    *,
+    model_router_settings: Settings | None = None,
 ) -> AgentOutput:
+    trace = invoke_model_router_for_engineer_node(
+        session,
+        directive=directive,
+        ledger=ledger,
+        state=state,
+        settings=model_router_settings,
+    )
     return AgentExecutor(session).run(
         directive=directive,
         ledger=ledger,
@@ -128,4 +143,5 @@ def run_engineer_agent_phase(
         state=state,
         node_name="engineer",
         role=AgentRole.ENGINEER,
+        model_routing_trace=trace,
     )

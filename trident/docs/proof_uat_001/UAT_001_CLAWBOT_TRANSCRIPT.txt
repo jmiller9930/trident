@@ -1,0 +1,39 @@
+Directive: UAT_001 — clawbot.a51.corp:3000 evidence (2026-04-30)
+Runner: engineering automation / curl from dev workstation
+
+1) Start system (operator host: clawbot)
+   NOT RUN FROM HERE: local Docker daemon unavailable on automation host.
+   Operator must run on clawbot:
+     cd <trident-repo>/trident && git pull && docker compose up -d --build && docker compose ps
+
+2) Web / API smoke (HTTP)
+   GET http://clawbot.a51.corp:3000/  → 200 (HTML shell)
+   GET http://clawbot.a51.corp:3000/trident/api/health → {"status":"ok","service":"trident-api"}
+
+3) Directives + workflow (PASS)
+   POST http://clawbot.a51.corp:3000/trident/api/v1/directives/
+     → created directive 05f70382-5db8-4854-a86a-f732dc4d77cc (example)
+   POST .../v1/directives/{id}/workflow/run?reviewer_rejections_remaining=0
+     → directive_status COMPLETE, final_ledger_state CLOSED
+   GET .../v1/directives/{id} → matches COMPLETE / CLOSED
+
+4) IDE chat (FAIL — stale API on clawbot)
+   POST http://clawbot.a51.corp:3000/trident/api/v1/ide/chat
+     → 404 {"detail":"Not Found"}
+
+5) Lock enforcement (PASS)
+   POST .../v1/locks/acquire (directive D1, file uat-lock-conflict.txt) → 200 ACTIVE
+   POST .../v1/locks/acquire (directive D2, same path) → 409 {"detail":"lock_conflict"}
+
+6) Patch workflow (FAIL — stale API on clawbot)
+   POST .../v1/patches/propose → 404 {"detail":"Not Found"}
+
+7) FIX 005 visibility (FAIL — stale API on clawbot)
+   GET .../v1/system/model-router-status → 404 {"detail":"Not Found"}
+
+Usability / infra gaps observed:
+- GET .../trident/api/v1/directives?limit=5 returns 307 to http://clawbot.a51.corp/trident/... (drops :3000).
+  Use trailing slash on port 3000: .../directives/?limit=5 → 200.
+- HTTPS :443 vhost serves unrelated site for /trident/* (BLACK BOX 404); prefer documented HTTP :3000 for Trident UI/API during UAT.
+
+Verdict: Directive UAT_001 = FAIL until clawbot stack is rebuilt/restarted from current main (includes /v1/ide/*, /v1/patches/*, /v1/system/model-router-status).

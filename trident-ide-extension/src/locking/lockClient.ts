@@ -28,4 +28,15 @@ export class LockClient {
   }) {
     return this.api.releaseLock(params);
   }
+
+  heartbeat(params: {
+    lock_id: string;
+    project_id: string;
+    directive_id: string;
+    agent_role: string;
+    user_id: string;
+    file_path: string;
+  }) {
+    return this.api.postLockHeartbeat(params);
+  }
 }
