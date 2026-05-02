@@ -32,6 +32,33 @@ _VALID_SEVERITIES = frozenset({"INFO", "WARNING", "ERROR", "BLOCKING"})
 _JSON_FENCE_RE = re.compile(r"```(?:json)?\s*([\s\S]*?)```", re.IGNORECASE)
 
 
+def _repair_json_reviewer(raw: str) -> str:
+    import json as _j
+    import re as _re
+    try:
+        _j.loads(raw)
+        return raw
+    except _j.JSONDecodeError:
+        pass
+    fixed = _re.sub(r",\s*([\}\]])", r"\1", raw)
+    try:
+        _j.loads(fixed)
+        return fixed
+    except _j.JSONDecodeError:
+        pass
+    return raw
+
+
+def _extract_json_reviewer(text: str) -> str:
+    m = _JSON_FENCE_RE.search(text)
+    if m:
+        return _repair_json_reviewer(m.group(1).strip())
+    stripped = text.strip()
+    if stripped.startswith("{"):
+        return _repair_json_reviewer(stripped)
+    raise ReviewerOutputParseError("no_json_found_in_response")
+
+
 @dataclass
 class ReviewFinding:
     severity: str
@@ -57,13 +84,7 @@ class ReviewerRuntimeBlockedError(ValueError):
 
 
 def _extract_json(text: str) -> str:
-    m = _JSON_FENCE_RE.search(text)
-    if m:
-        return m.group(1).strip()
-    stripped = text.strip()
-    if stripped.startswith("{"):
-        return stripped
-    raise ReviewerOutputParseError("no_json_found_in_response")
+    return _extract_json_reviewer(text)
 
 
 def _parse_reviewer_output(response_text: str) -> ReviewerOutput:

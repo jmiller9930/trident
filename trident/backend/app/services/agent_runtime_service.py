@@ -56,15 +56,34 @@ _PROHIBITED_CHANGE_TYPES = frozenset({"delete"})
 _JSON_FENCE_RE = re.compile(r"```(?:json)?\s*([\s\S]*?)```", re.IGNORECASE)
 
 
+def _repair_json(raw: str) -> str:
+    """Light repair pass for common small-LLM JSON quirks (trailing commas, etc.)."""
+    import json as _json
+    # First try as-is
+    try:
+        _json.loads(raw)
+        return raw
+    except _json.JSONDecodeError:
+        pass
+    # Remove trailing comma before } or ]
+    fixed = re.sub(r",\s*([\}\]])", r"\1", raw)
+    try:
+        _json.loads(fixed)
+        return fixed
+    except _json.JSONDecodeError:
+        pass
+    return raw  # return original — caller will still fail cleanly
+
+
 def _extract_json(text: str) -> str:
     """Extract JSON from model response — strip markdown fences if present."""
     match = _JSON_FENCE_RE.search(text)
     if match:
-        return match.group(1).strip()
+        return _repair_json(match.group(1).strip())
     # Try raw — the text may be plain JSON
     stripped = text.strip()
     if stripped.startswith("{"):
-        return stripped
+        return _repair_json(stripped)
     raise AgentOutputParseError("no_json_found_in_response")
 
 
