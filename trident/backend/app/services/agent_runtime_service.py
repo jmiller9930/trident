@@ -13,6 +13,7 @@ Constraints (enforced here, not caller-side):
 
 from __future__ import annotations
 
+import base64
 import json
 import re
 import uuid
@@ -87,7 +88,17 @@ def _extract_json(text: str) -> str:
     raise AgentOutputParseError("no_json_found_in_response")
 
 
+def _decode_b64_content(b64: str, path: str) -> str:
+    """Decode base64 file content. Raises AgentOutputParseError on failure."""
+    try:
+        decoded = base64.b64decode(b64, validate=True).decode("utf-8")
+    except Exception as e:
+        raise AgentOutputParseError(f"base64_decode_failed:{path[:60]}:{type(e).__name__}") from e
+    return decoded
+
+
 def _parse_agent_output(response_text: str) -> AgentPatchOutput:
+    """Parse model output using the D6-safe contract (content_base64 primary, content legacy fallback)."""
     raw = _extract_json(response_text)
     try:
         data = json.loads(raw)
@@ -97,24 +108,25 @@ def _parse_agent_output(response_text: str) -> AgentPatchOutput:
     if not isinstance(data, dict):
         raise AgentOutputParseError("output_must_be_json_object")
 
-    title = data.get("title", "").strip()
-    summary = data.get("summary", "").strip()
-    files_changed = data.get("files_changed")
-    unified_diff = data.get("unified_diff", "")
+    # Support both new contract (files + content_base64) and legacy (files_changed + content)
+    files_raw = data.get("files") or data.get("files_changed")
+    title = (data.get("title") or data.get("notes", "")).strip()
+    summary = (data.get("summary") or data.get("notes", "")).strip()
+    if not summary:
+        summary = title  # allow notes-only for the minimal contract
 
     if not title:
         raise AgentOutputParseError("missing_field:title")
-    if not summary:
-        raise AgentOutputParseError("missing_field:summary")
-    if not isinstance(files_changed, list) or len(files_changed) == 0:
-        raise AgentOutputParseError("files_changed_empty_or_missing")
+    if not isinstance(files_raw, list) or len(files_raw) == 0:
+        raise AgentOutputParseError("files_empty_or_missing")
 
-    for f in files_changed:
+    resolved_files: list[dict[str, Any]] = []
+    for f in files_raw:
         if not isinstance(f, dict):
-            raise AgentOutputParseError("files_changed_entry_must_be_object")
+            raise AgentOutputParseError("file_entry_must_be_object")
+
         path = str(f.get("path", "")).strip()
         change_type = str(f.get("change_type", "update")).lower()
-        content = f.get("content")
 
         if not path:
             raise AgentOutputParseError("empty_file_path")
@@ -124,14 +136,27 @@ def _parse_agent_output(response_text: str) -> AgentPatchOutput:
             raise AgentOutputParseError(f"path_traversal_forbidden:{path[:80]}")
         if change_type in _PROHIBITED_CHANGE_TYPES:
             raise AgentOutputParseError(f"delete_operation_not_supported:{path[:80]}")
-        if content is None or not isinstance(content, str):
-            raise AgentOutputParseError(f"missing_or_binary_content:{path[:80]}")
+
+        # Prefer base64 content (D6-safe), fall back to raw content (legacy)
+        content_b64 = f.get("content_base64")
+        content_raw = f.get("content")
+
+        if content_b64 is not None:
+            content = _decode_b64_content(str(content_b64), path)
+        elif content_raw is not None:
+            if not isinstance(content_raw, str):
+                raise AgentOutputParseError(f"binary_content_rejected:{path[:80]}")
+            content = content_raw
+        else:
+            raise AgentOutputParseError(f"no_content_for_path:{path[:80]}")
+
+        resolved_files.append({"path": path, "change_type": change_type, "content": content})
 
     return AgentPatchOutput(
         title=title,
         summary=summary,
-        files_changed=files_changed,
-        unified_diff=str(unified_diff) if unified_diff else "",
+        files_changed=resolved_files,
+        unified_diff=str(data.get("unified_diff", "")) if data.get("unified_diff") else "",
     )
 
 
@@ -164,21 +189,27 @@ def _build_engineer_prompt(
         "IMPORTANT: If project context was provided above, use real file paths and code patterns from it.",
         "Match existing variable names, class names, and coding conventions.",
         "",
-        "Output ONLY a JSON object with this exact structure:",
+        "Output ONLY a JSON object with this EXACT structure:",
         '{',
         '  "title": "short descriptive title",',
         '  "summary": "explanation of what changes and why",',
-        '  "files_changed": [',
-        '    {"path": "relative/path/to/file.py", "change_type": "create|update", "content": "...full file content..."}',
-        '  ],',
-        '  "unified_diff": "optional unified diff string"',
+        '  "files": [',
+        '    {',
+        '      "path": "relative/path/to/file.py",',
+        '      "change_type": "update",',
+        '      "content_base64": "BASE64_ENCODED_FULL_FILE_CONTENT"',
+        '    }',
+        '  ]',
         '}',
         "",
-        "Rules:",
-        "- Use actual file paths from the repository.",
+        "CRITICAL RULES:",
+        "- content_base64 must be the FULL file content encoded as standard base64 (no line breaks in the base64 string).",
+        "- To encode: write the complete UTF-8 file content, then base64-encode it.",
+        "- Example: 'def hello(): pass\\n' encodes to 'ZGVmIGhlbGxvKCk6IHBhc3MK'",
+        "- Use real paths from the project context (no invented paths).",
         "- Paths must be relative (no leading /).",
         "- No delete operations.",
-        "- Respond with ONLY the JSON object — no commentary before or after.",
+        "- Respond with ONLY the JSON object — no markdown, no explanation.",
     ]
     if execution_context:
         lines += ["", "Context:", execution_context]
@@ -315,9 +346,13 @@ class AgentRuntimeService:
         correlation_id = routing_trace.get("token_optimization", {}).get("model_plane_correlation_id")
 
         # ── Parse output ──────────────────────────────────────────────────────
+        raw_response = model_result.response_text
         try:
-            output = _parse_agent_output(model_result.response_text)
+            output = _parse_agent_output(raw_response)
         except AgentOutputParseError as e:
+            parse_err = str(e)
+            # Store a safe truncation of raw output for debugging (no secrets)
+            raw_preview = raw_response[:2000] if raw_response else ""
             self._emit(
                 AuditEventType.AGENT_RUN_FAILED,
                 project_id=project_id,
@@ -326,8 +361,15 @@ class AgentRuntimeService:
                 payload={
                     "agent_role": AgentRole.ENGINEER.value,
                     "reason_code": "output_parse_error",
-                    "parse_error": str(e),
+                    "parse_error": parse_err,
+                    "parse_failure_reason": parse_err,
                     "model_correlation_id": correlation_id,
+                    # Enriched context fields (D6)
+                    "context_used": ctx.context_used,
+                    "context_chunk_count": ctx.chunk_count,
+                    "context_files_used": ctx.files_used,
+                    "model_route": model_result.decision,
+                    "raw_output_preview": raw_preview,
                 },
             )
             self._db.flush()
@@ -363,11 +405,13 @@ class AgentRuntimeService:
                 "file_count": len(output.files_changed),
                 "model_routing_decision": model_result.decision,
                 "model_correlation_id": correlation_id,
-                # RAG context audit (AGENT_CONTEXT_001)
+                # RAG context + D6 enriched audit fields
                 "context_used": ctx.context_used,
                 "context_chunk_count": ctx.chunk_count,
                 "context_files_used": ctx.files_used,
                 "context_warning": ctx.warning,
+                "model_route": model_result.decision,
+                "parse_failure_reason": None,
             },
         )
         self._db.flush()

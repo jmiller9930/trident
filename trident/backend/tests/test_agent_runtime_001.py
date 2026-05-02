@@ -54,17 +54,36 @@ def _agent_url(ids, did) -> str:
     return f"/api/v1/projects/{_pid(ids)}/directives/{did}/agents/engineer/run"
 
 
+import base64 as _b64
+
+_CONTENT = "def login(email: str, password: str):\n    if not email or len(password) < 8:\n        raise ValueError('invalid')\n"
+_CONTENT_B64 = _b64.b64encode(_CONTENT.encode()).decode()
+
+# New D6-safe contract (base64)
 VALID_JSON_RESPONSE = json.dumps({
+    "title": "Add input validation to login",
+    "summary": "Validates email and password length before DB query.",
+    "files": [
+        {
+            "path": "app/auth/login.py",
+            "change_type": "update",
+            "content_base64": _CONTENT_B64,
+        }
+    ],
+})
+
+# Legacy contract still supported (backward compat)
+VALID_JSON_RESPONSE_LEGACY = json.dumps({
     "title": "Add input validation to login",
     "summary": "Validates email and password length before DB query.",
     "files_changed": [
         {
             "path": "app/auth/login.py",
             "change_type": "update",
-            "content": "def login(email: str, password: str):\n    if not email or len(password) < 8:\n        raise ValueError('invalid')\n",
+            "content": _CONTENT,
         }
     ],
-    "unified_diff": "--- a/app/auth/login.py\n+++ b/app/auth/login.py\n@@ -1 +1,3 @@\n+def login(email, password):\n+    if not email: raise ValueError()",
+    "unified_diff": "",
 })
 
 
@@ -102,11 +121,21 @@ def _mock_model_result(response_text: str) -> MagicMock:
 
 # ── _parse_agent_output unit tests ────────────────────────────────────────────
 
-def test_parse_valid_json_output() -> None:
+def test_parse_valid_json_output_b64() -> None:
+    """New D6-safe contract: files + content_base64."""
     out = _parse_agent_output(VALID_JSON_RESPONSE)
     assert out.title == "Add input validation to login"
     assert len(out.files_changed) == 1
     assert out.files_changed[0]["path"] == "app/auth/login.py"
+    # Content is decoded from base64
+    assert "def login" in out.files_changed[0]["content"]
+
+
+def test_parse_legacy_contract_still_works() -> None:
+    """Legacy files_changed + content still accepted."""
+    out = _parse_agent_output(VALID_JSON_RESPONSE_LEGACY)
+    assert out.title == "Add input validation to login"
+    assert out.files_changed[0]["content"] == _CONTENT
 
 
 def test_parse_json_in_fence() -> None:
@@ -125,14 +154,14 @@ def test_parse_missing_title_fails() -> None:
 
 def test_parse_empty_files_fails() -> None:
     data = json.loads(VALID_JSON_RESPONSE)
-    data["files_changed"] = []
+    data["files"] = []
     with pytest.raises(AgentOutputParseError):
         _parse_agent_output(json.dumps(data))
 
 
 def test_parse_absolute_path_fails() -> None:
     data = json.loads(VALID_JSON_RESPONSE)
-    data["files_changed"][0]["path"] = "/etc/passwd"
+    data["files"][0]["path"] = "/etc/passwd"
     with pytest.raises(AgentOutputParseError) as ei:
         _parse_agent_output(json.dumps(data))
     assert "absolute_path" in str(ei.value)
@@ -140,7 +169,7 @@ def test_parse_absolute_path_fails() -> None:
 
 def test_parse_traversal_path_fails() -> None:
     data = json.loads(VALID_JSON_RESPONSE)
-    data["files_changed"][0]["path"] = "../secret.txt"
+    data["files"][0]["path"] = "../secret.txt"
     with pytest.raises(AgentOutputParseError) as ei:
         _parse_agent_output(json.dumps(data))
     assert "traversal" in str(ei.value)
@@ -148,10 +177,18 @@ def test_parse_traversal_path_fails() -> None:
 
 def test_parse_delete_operation_fails() -> None:
     data = json.loads(VALID_JSON_RESPONSE)
-    data["files_changed"][0]["change_type"] = "delete"
+    data["files"][0]["change_type"] = "delete"
     with pytest.raises(AgentOutputParseError) as ei:
         _parse_agent_output(json.dumps(data))
     assert "delete" in str(ei.value)
+
+
+def test_parse_bad_base64_fails() -> None:
+    data = json.loads(VALID_JSON_RESPONSE)
+    data["files"][0]["content_base64"] = "!!! not base64 !!!"
+    with pytest.raises(AgentOutputParseError) as ei:
+        _parse_agent_output(json.dumps(data))
+    assert "base64" in str(ei.value)
 
 
 def test_parse_invalid_json_fails() -> None:
@@ -263,7 +300,7 @@ def test_invalid_json_returns_422(client, minimal_project_ids, db_session) -> No
 def test_missing_required_field_returns_422(client, minimal_project_ids, db_session) -> None:
     did, h = _make_issued_directive(client, db_session, minimal_project_ids)
     bad = json.loads(VALID_JSON_RESPONSE)
-    del bad["files_changed"]
+    del bad["files"]
 
     with patch.object(ModelRouterService, "route", return_value=_mock_model_result(json.dumps(bad))):
         r = client.post(_agent_url(minimal_project_ids, did), json={}, headers=h)
@@ -274,7 +311,7 @@ def test_missing_required_field_returns_422(client, minimal_project_ids, db_sess
 def test_absolute_path_in_response_returns_422(client, minimal_project_ids, db_session) -> None:
     did, h = _make_issued_directive(client, db_session, minimal_project_ids)
     bad = json.loads(VALID_JSON_RESPONSE)
-    bad["files_changed"][0]["path"] = "/etc/hosts"
+    bad["files"][0]["path"] = "/etc/hosts"
 
     with patch.object(ModelRouterService, "route", return_value=_mock_model_result(json.dumps(bad))):
         r = client.post(_agent_url(minimal_project_ids, did), json={}, headers=h)
@@ -285,7 +322,7 @@ def test_absolute_path_in_response_returns_422(client, minimal_project_ids, db_s
 def test_traversal_path_in_response_returns_422(client, minimal_project_ids, db_session) -> None:
     did, h = _make_issued_directive(client, db_session, minimal_project_ids)
     bad = json.loads(VALID_JSON_RESPONSE)
-    bad["files_changed"][0]["path"] = "../../secret"
+    bad["files"][0]["path"] = "../../secret"
 
     with patch.object(ModelRouterService, "route", return_value=_mock_model_result(json.dumps(bad))):
         r = client.post(_agent_url(minimal_project_ids, did), json={}, headers=h)
@@ -296,7 +333,7 @@ def test_traversal_path_in_response_returns_422(client, minimal_project_ids, db_
 def test_delete_operation_rejected(client, minimal_project_ids, db_session) -> None:
     did, h = _make_issued_directive(client, db_session, minimal_project_ids)
     bad = json.loads(VALID_JSON_RESPONSE)
-    bad["files_changed"][0]["change_type"] = "delete"
+    bad["files"][0]["change_type"] = "delete"
 
     with patch.object(ModelRouterService, "route", return_value=_mock_model_result(json.dumps(bad))):
         r = client.post(_agent_url(minimal_project_ids, did), json={}, headers=h)
