@@ -56,6 +56,7 @@ _EXT_LANG: dict[str, str] = {
 }
 
 # ── Framework/tooling heuristic (filename → hint) ────────────────────────────
+# Also see _match_framework_patterns() below for glob-style matches (e.g. requirements-*.txt)
 _FILE_FRAMEWORK: dict[str, str] = {
     "requirements.txt": "python-pip",
     "pyproject.toml": "python-poetry",
@@ -109,6 +110,49 @@ _SECRET_PATTERNS: list[re.Pattern[str]] = [
 
 # Binary detection: first 8 KB null-byte check
 _BINARY_SAMPLE = 8192
+
+# ── Language weighting for primary detection (ONBOARD_003 fix D3/D4) ─────────
+# Source/logic files outrank data formats when computing primary language.
+# Weight > 1 elevates; weight < 1 demotes.
+_LANG_WEIGHTS: dict[str, float] = {
+    "python": 3.0,
+    "typescript": 3.0,
+    "javascript": 3.0,
+    "go": 3.0,
+    "java": 3.0,
+    "rust": 3.0,
+    "ruby": 3.0,
+    "csharp": 3.0,
+    "cpp": 3.0,
+    "c": 3.0,
+    "shell": 2.0,
+    "markdown": 1.5,
+    "yaml": 1.2,
+    "toml": 1.2,
+    "sql": 1.2,
+    "json": 0.3,   # data format — demoted so Python/TS code is primary
+    "r": 1.0,
+    "matlab": 1.0,
+    "terraform": 1.5,
+}
+
+# ── Filename patterns that map to framework hints (ONBOARD_003 fix D4) ───────
+import fnmatch as _fnmatch
+
+_FILENAME_FRAMEWORK_PATTERNS: list[tuple[str, str]] = [
+    ("requirements*.txt", "python-pip"),
+    ("requirements-*.txt", "python-pip"),
+    ("Dockerfile*", "docker"),
+    ("docker-compose*.yml", "docker-compose"),
+    ("docker-compose*.yaml", "docker-compose"),
+]
+
+
+def _match_framework_patterns(filename: str) -> str | None:
+    for pattern, hint in _FILENAME_FRAMEWORK_PATTERNS:
+        if _fnmatch.fnmatch(filename, pattern):
+            return hint
+    return None
 
 
 class PathTraversalError(ValueError):
@@ -241,17 +285,19 @@ class OnboardingScanService:
             if lang:
                 lang_counts[lang] = lang_counts.get(lang, 0) + 1
 
-            # framework hints by filename
-            hint = _FILE_FRAMEWORK.get(name)
+            # framework hints by filename (exact + pattern)
+            hint = _FILE_FRAMEWORK.get(name) or _match_framework_patterns(name)
             if hint and hint not in framework_hints:
                 framework_hints.append(hint)
 
-            # dependency files
+            # dependency files (exact + requirements-*.txt glob)
+            import fnmatch as _fn
+            is_req_txt = _fn.fnmatch(name, "requirements*.txt") or _fn.fnmatch(name, "requirements-*.txt")
             if name in {
                 "requirements.txt", "pyproject.toml", "setup.py", "Pipfile",
                 "package.json", "Cargo.toml", "go.mod", "pom.xml", "build.gradle",
                 "Gemfile", "composer.json",
-            }:
+            } or is_req_txt:
                 dependency_files.append(rel_str)
 
             # test dirs
@@ -289,7 +335,9 @@ class OnboardingScanService:
         # language breakdown percentages
         total_code = sum(lang_counts.values()) or 1
         lang_breakdown = {k: round(v / total_code, 4) for k, v in sorted(lang_counts.items(), key=lambda x: -x[1])}
-        primary_lang = max(lang_counts, key=lang_counts.get) if lang_counts else None
+        # Weighted primary detection: apply semantic weight so data formats don't dominate source languages
+        weighted = {k: v * _LANG_WEIGHTS.get(k, 1.0) for k, v in lang_counts.items()}
+        primary_lang = max(weighted, key=weighted.get) if weighted else None
 
         # git check
         git_clean_status = "PASS" if git_commit_sha else "WARN"

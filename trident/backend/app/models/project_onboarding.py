@@ -69,8 +69,13 @@ class ProjectOnboarding(Base):
         JSON().with_variant(JSONB(), "postgresql"), nullable=True
     )
 
-    # ── Indexing ───────────────────────────────────────────────────────────
+    # ── Indexing (ONBOARD_003) ─────────────────────────────────────────────
     index_job_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    index_status: Mapped[str] = mapped_column(String(32), nullable=False, server_default="NOT_STARTED")
+    indexed_file_count: Mapped[int | None] = mapped_column(nullable=True)
+    indexed_chunk_count: Mapped[int | None] = mapped_column(nullable=True)
+    index_error_safe: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    indexed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # ── Approval ───────────────────────────────────────────────────────────
     approved_by_user_id: Mapped[uuid.UUID | None] = mapped_column(

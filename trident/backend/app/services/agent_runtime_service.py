@@ -24,6 +24,7 @@ from sqlalchemy.orm import Session
 from app.config.settings import Settings
 from app.models.directive import Directive
 from app.models.enums import AgentRole, AuditActorType, AuditEventType, DirectiveStatus
+from app.services.agent_context_retriever import AgentContextRetriever, RetrievedContext
 from app.model_router.model_router_service import ModelRouterResult, ModelRouterService
 from app.repositories.audit_repository import AuditRepository
 from app.repositories.task_ledger_repository import TaskLedgerRepository
@@ -121,13 +122,28 @@ def _build_engineer_prompt(
     directive: Directive,
     instruction: str | None = None,
     execution_context: str | None = None,
+    context_block: str | None = None,
 ) -> str:
-    lines = [
-        "You are the Trident Engineer agent.",
+    lines = ["You are the Trident Engineer agent."]
+
+    # Inject project context first (when available) so model grounds in repo reality
+    if context_block:
+        lines += [context_block, ""]
+
+    lines += [
+        f"[DIRECTIVE]",
         f"Directive ID: {directive.id}",
         f"Directive title: {directive.title}",
         "",
+        "[INSTRUCTION]",
+    ]
+    if instruction:
+        lines.append(instruction)
+    lines += [
+        "",
         "Your task: produce a patch proposal as structured JSON.",
+        "IMPORTANT: If project context was provided above, use real file paths and code patterns from it.",
+        "Match existing variable names, class names, and coding conventions.",
         "",
         "Output ONLY a JSON object with this exact structure:",
         '{',
@@ -140,14 +156,11 @@ def _build_engineer_prompt(
         '}',
         "",
         "Rules:",
+        "- Use actual file paths from the repository.",
         "- Paths must be relative (no leading /).",
         "- No delete operations.",
-        "- No absolute paths.",
         "- Respond with ONLY the JSON object — no commentary before or after.",
     ]
-    if instruction:
-        lines.insert(4, f"Instruction: {instruction}")
-        lines.insert(5, "")
     if execution_context:
         lines += ["", "Context:", execution_context]
     return "\n".join(lines)
@@ -242,8 +255,14 @@ class AgentRuntimeService:
         )
         self._db.flush()
 
+        # ── Retrieve project context (RAG) ───────────────────────────────────
+        retriever = AgentContextRetriever(self._settings)
+        query = f"{directive.title} {instruction or ''}"
+        ctx: RetrievedContext = retriever.retrieve(project_id=project_id, query_text=query)
+        context_block = retriever.format_context_block(ctx) if ctx.context_used else None
+
         # ── Build prompt ──────────────────────────────────────────────────────
-        prompt = _build_engineer_prompt(directive, instruction)
+        prompt = _build_engineer_prompt(directive, instruction, context_block=context_block)
 
         # ── Model call (governed router) ──────────────────────────────────────
         model_svc = ModelRouterService(
@@ -325,6 +344,11 @@ class AgentRuntimeService:
                 "file_count": len(output.files_changed),
                 "model_routing_decision": model_result.decision,
                 "model_correlation_id": correlation_id,
+                # RAG context audit (AGENT_CONTEXT_001)
+                "context_used": ctx.context_used,
+                "context_chunk_count": ctx.chunk_count,
+                "context_files_used": ctx.files_used,
+                "context_warning": ctx.warning,
             },
         )
         self._db.flush()

@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from app.config.settings import Settings
 from app.models.directive import Directive
 from app.models.enums import AgentRole, AuditActorType, AuditEventType, DirectiveStatus
+from app.services.agent_context_retriever import AgentContextRetriever, RetrievedContext
 from app.model_router.model_router_service import ModelRouterResult, ModelRouterService
 from app.models.patch_proposal import PatchProposal, PatchProposalStatus
 from app.models.patch_review import PatchReview, ReviewerRecommendation
@@ -141,6 +142,7 @@ def _build_reviewer_prompt(
     directive: Directive,
     patch: PatchProposal,
     instruction: str | None = None,
+    context_block: str | None = None,
 ) -> str:
     files_summary = ""
     fc = patch.files_changed
@@ -151,8 +153,14 @@ def _build_reviewer_prompt(
         paths = [f.get("path", "?") for f in fc[:10]]
         files_summary = f"Files in patch: {', '.join(paths)}"
 
-    lines = [
-        "You are the Trident Reviewer agent.",
+    lines = ["You are the Trident Reviewer agent."]
+
+    # Inject project context first (when available)
+    if context_block:
+        lines += [context_block, ""]
+
+    lines += [
+        "[PATCH UNDER REVIEW]",
         f"Directive ID: {directive.id}",
         f"Directive title: {directive.title}",
         f"Patch ID: {patch.id}",
@@ -160,7 +168,9 @@ def _build_reviewer_prompt(
         f"Patch summary: {patch.summary or 'none'}",
         files_summary,
         "",
-        "Your task: review this patch proposal and return a structured JSON review.",
+        "Your task: review this patch proposal against the [PROJECT CONTEXT] above.",
+        "CRITICAL: If the patch uses wrong variable names, incorrect key names, or contradicts",
+        "the code patterns shown in the context, flag it as NEEDS_CHANGES or REJECT.",
         "",
         "Output ONLY a JSON object:",
         '{',
@@ -173,12 +183,13 @@ def _build_reviewer_prompt(
         '}',
         "",
         "Rules:",
+        "- Compare patch content to the project context. Flag mismatches.",
         "- findings paths must be relative (no leading /).",
         "- REJECT and NEEDS_CHANGES require at least one finding.",
         "- Respond with ONLY the JSON object.",
     ]
     if instruction:
-        lines.insert(7, f"Reviewer instruction: {instruction}")
+        lines.insert(len(lines) - 10, f"Reviewer instruction: {instruction}")
     return "\n".join(lines)
 
 
@@ -259,7 +270,13 @@ class ReviewerRuntimeService:
         )
         self._db.flush()
 
-        prompt = _build_reviewer_prompt(directive, patch, instruction)
+        # ── Retrieve project context (RAG) ─────────────────────────────────────
+        retriever = AgentContextRetriever(self._settings)
+        query = f"{directive.title} {patch.title or ''} {instruction or ''}"
+        ctx: RetrievedContext = retriever.retrieve(project_id=project_id, query_text=query)
+        context_block = retriever.format_context_block(ctx) if ctx.context_used else None
+
+        prompt = _build_reviewer_prompt(directive, patch, instruction, context_block=context_block)
         model_svc = ModelRouterService(self._db, self._settings, model_plane_router=model_plane_router)
         try:
             model_result: ModelRouterResult = model_svc.route(
@@ -327,6 +344,11 @@ class ReviewerRuntimeService:
                 "confidence": output.confidence,
                 "finding_count": len(output.findings),
                 "model_correlation_id": correlation_id,
+                # RAG context audit (AGENT_CONTEXT_001)
+                "context_used": ctx.context_used,
+                "context_chunk_count": ctx.chunk_count,
+                "context_files_used": ctx.files_used,
+                "context_warning": ctx.warning,
             },
         )
         self._db.flush()
